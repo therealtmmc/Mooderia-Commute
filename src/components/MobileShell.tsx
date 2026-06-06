@@ -251,7 +251,9 @@ export default function MobileShell() {
     setPinAttemptsError('');
   };
 
-  const [forceApkSimDir, setForceApkSimDir] = useState(false);
+  const [forceApkSimDir, setForceApkSimDir] = useState(() => {
+    return localStorage.getItem('mooderia_bypass_restriction') === 'true';
+  });
 
   const triggerApkDownload = () => {
     // Generate an exquisite client-side signature mimicking the actual Android binary file
@@ -279,7 +281,12 @@ export default function MobileShell() {
                     (window as any).cordova || 
                     (window as any).Capacitor ||
                     navigator.userAgent.toLowerCase().includes('wv') ||
-                    window.location.search.includes('apk=true');
+                    window.location.search.includes('apk=true') ||
+                    window.location.protocol === 'file:' ||
+                    window.location.protocol.includes('capacitor') ||
+                    window.location.protocol.includes('app') ||
+                    window.location.hostname === 'localhost' ||
+                    window.location.hostname === '127.0.0.1';
 
   const isRestrictedMobileBrowser = isMobile && !isWebView && !forceApkSimDir && viewportWidth <= 850;
 
@@ -365,13 +372,26 @@ export default function MobileShell() {
               </p>
             </div>
 
-            <button
-              onClick={() => triggerApkDownload()}
-              className="w-full bg-[#7c3aed] hover:bg-purple-700 active:scale-[0.98] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-purple-500/20 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4 animate-bounce" />
-              <span>Download Mooderia Commute v2.5.apk</span>
-            </button>
+            <div className="w-full space-y-2.5">
+              <button
+                onClick={() => triggerApkDownload()}
+                className="w-full bg-[#7c3aed] hover:bg-purple-700 active:scale-[0.98] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-purple-500/20 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4 animate-bounce" />
+                <span>Download Mooderia Commute v2.5.apk</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  localStorage.setItem('mooderia_bypass_restriction', 'true');
+                  setForceApkSimDir(true);
+                }}
+                className="w-full bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-400 hover:bg-purple-50/30 dark:hover:bg-purple-950/20 active:scale-[0.98] py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-[#7c3aed]" />
+                <span>Enter App (APK Container Verified)</span>
+              </button>
+            </div>
 
             <div className="w-full flex justify-between items-center text-[9px] text-slate-400 dark:text-slate-550 font-bold border-t border-purple-100/20 dark:border-purple-950/30 pt-3">
               <span>App Size: ~12.4 MB</span>
@@ -434,7 +454,10 @@ export default function MobileShell() {
       <div id="applet-viewport-root" className="w-full h-full bg-slate-50 dark:bg-slate-950 flex flex-col font-sans select-none overflow-hidden text-slate-800 dark:text-slate-100 transition-colors duration-150">
         
         {/* --- Top Status Ticker Header --- */}
-        <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md py-3 px-5 flex justify-between items-center text-slate-800 dark:text-slate-100 select-none shrink-0 border-b border-slate-200 dark:border-slate-800 relative z-20">
+        <div 
+          className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md px-5 flex justify-between items-end pb-2.5 text-slate-800 dark:text-slate-100 select-none shrink-0 border-b border-slate-200 dark:border-slate-800 relative z-20"
+          style={{ height: 'calc(env(safe-area-inset-top, 20px) + 44px)', paddingTop: 'env(safe-area-inset-top, 20px)' }}
+        >
           <div className="flex items-center gap-2 relative z-10 w-24">
              {isOnline ? (
                <div className="flex items-center gap-1 text-[9px] font-black uppercase text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
@@ -450,7 +473,7 @@ export default function MobileShell() {
           </div>
           
           {/* Centered Bigger Headline */}
-          <div className="absolute left-0 right-0 text-center pointer-events-none">
+          <div className="absolute left-0 right-0 text-center pointer-events-none bottom-2.5">
             <span className="font-sans text-sm tracking-widest font-black uppercase opacity-90 text-[#46178f] dark:text-purple-300">
               Mooderia
             </span>
