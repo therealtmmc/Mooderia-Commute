@@ -1,0 +1,6 @@
+{
+  "name": "Mooderia Commute",
+  "description": "An advanced navigation and transit routing assistant for complex, multi-modal travel planning, featuring custom waypoint support, real-time comparisons (driving, transit, walking, cycling), and personalized transit analytics.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
