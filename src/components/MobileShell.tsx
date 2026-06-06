@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2 } from 'lucide-react';
+import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles } from 'lucide-react';
 import { db, UserProfile } from '../lib/db';
 import P2PRouting from './P2PRouting';
 import LocalAIAgent from './LocalAIAgent';
@@ -251,61 +251,13 @@ export default function MobileShell() {
     setPinAttemptsError('');
   };
 
-  const isDesktop = viewportWidth > 500;
-
-  // Render responsive desktop barrier
-  if (isDesktop) {
-    return (
-      <div id="desktop-commute-barrier" className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center select-none font-sans">
-        <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[32px] p-8 border border-purple-100 dark:border-purple-950 shadow-xl space-y-6">
-          <div className="flex justify-center">
-            <div className="relative">
-              <div className="w-20 h-20 bg-purple-100 dark:bg-purple-950/60 rounded-full flex items-center justify-center animate-pulse">
-                <Laptop className="w-10 h-10 text-[#46178f] dark:text-purple-300" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#e21b3c] rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center font-black text-white text-xs">
-                ✕
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">
-              MOBILE VIEWPORT PORTAL
-            </h1>
-            <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed max-w-xs mx-auto">
-              Mooderia Commute is designed strictly for smartphone-sized screens to authenticate mobile-first offline operations.
-            </p>
-          </div>
-
-          <div className="bg-purple-50/50 dark:bg-purple-950/10 rounded-2xl p-4 border border-purple-100 dark:border-purple-955 space-y-3">
-            <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
-              <span>Your Width</span>
-              <span className="text-[#e21b3c]">{viewportWidth}px</span>
-            </div>
-            <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div className="bg-[#e21b3c] h-full" style={{ width: `${Math.min(100, (viewportWidth / 1000) * 100)}%` }}></div>
-            </div>
-            <div className="flex justify-between text-[9px] text-slate-400">
-              <span>Target Mobile (≤ 500px)</span>
-              <span>Desktop width</span>
-            </div>
-          </div>
-
-          <div className="border-t border-purple-100 dark:border-purple-950 pt-4 text-left space-y-1.5 text-xs text-slate-500 leading-relaxed">
-            <p>• Please drag your browser screen narrower (under 500px) to unlock the workspace.</p>
-            <p>• Alternatively, toggle mobile view via developer tools (F12 device toggle).</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const isDesktop = viewportWidth > 850;
 
   // --- HTML App rendering in Dark mode vs Light Mode class context ---
   const isDarkClass = profile.theme === 'dark' ? 'dark' : '';
 
-  return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full h-screen`}>
+  const renderPhoneScreen = () => {
+    return (
       <div id="applet-viewport-root" className="w-full h-full bg-slate-50 dark:bg-slate-950 flex flex-col font-sans select-none overflow-hidden text-slate-800 dark:text-slate-100 transition-colors duration-150">
         
         {/* --- Top Status Ticker Header --- */}
@@ -733,6 +685,178 @@ export default function MobileShell() {
         )}
 
       </div>
+    );
+  };
+
+  return (
+    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full h-screen bg-slate-100 dark:bg-slate-950`}>
+      {isDesktop ? (
+        <div id="desktop-commute-wrapper" className="w-full h-full overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-950/45 p-4 select-text">
+          <div className="w-full h-full max-w-7xl mx-auto flex lg:flex-row flex-col overflow-hidden text-slate-800 dark:text-slate-100 p-4 lg:p-8 gap-6 lg:gap-10 justify-center items-stretch bg-slate-100/50 dark:bg-slate-950/40">
+            {/* Left Column: Premium Informational Board (purple/white themed sections + about + privacy) */}
+            <div className="flex-1 overflow-y-auto style-scrollbar flex flex-col justify-between space-y-6 pr-2 lg:py-2">
+              <div className="space-y-6">
+                {/* App Header Title Branding */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-[#46178f] text-white rounded-2xl flex items-center justify-center shadow-lg relative shrink-0">
+                    <Compass className="w-6 h-6 text-yellow-300 transform -rotate-12 animate-pulse" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-black tracking-tight uppercase text-slate-850 dark:text-stone-100">
+                      Mooderia Commute
+                    </h1>
+                    <p className="text-[10px] tracking-wider text-purple-600 dark:text-purple-400 uppercase font-black">
+                      Advanced Navigation &amp; Point-to-Point Analyzer
+                    </p>
+                  </div>
+                </div>
+
+                {/* IMPORTANT INFORMATION SECTION - Bold, highly elegant Purple/White card */}
+                <div className="bg-[#46178f] border border-purple-600 rounded-[24px] p-6 text-white shadow-xl relative overflow-hidden flex flex-col space-y-4 text-left">
+                  {/* Subtle decorative background glow */}
+                  <div className="absolute -top-10 -right-10 w-44 h-44 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                  <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-violet-600/30 rounded-full blur-2xl pointer-events-none"></div>
+
+                  <div className="flex items-center gap-2 relative z-10">
+                    <ShieldAlert className="w-5 h-5 text-yellow-300" />
+                    <h2 className="text-xs font-black uppercase tracking-wider text-white">
+                      Important Desktop Commuter Information
+                    </h2>
+                  </div>
+
+                  <p className="text-xs text-purple-100 font-medium leading-relaxed relative z-10">
+                    To provide highly accurate point-to-point commuting computations, Mooderia isolates tricycle, jeepney, P2P bus, train, and walking corridors natively on your device. Standard maps often ignore these hyper-local pathways.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 relative z-10 pt-1">
+                    <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl p-3 space-y-1">
+                      <span className="text-[9px] font-black uppercase text-yellow-300 block">Interactive Mobile Sandbox</span>
+                      <p className="text-[10px] text-purple-50 font-medium leading-normal">
+                        Utilize the physical smartphone emulator on the right to simulate live GPS movements, toggle night/dark modes, and calculate accurate fares.
+                      </p>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-xl p-3 space-y-1">
+                      <span className="text-[9px] font-black uppercase text-yellow-300 block">Route Specific Numbers</span>
+                      <p className="text-[10px] text-purple-50 font-medium leading-normal">
+                        Ensure you input customized route numbers (e.g. 12A, JRT-1) and specify continuous routes like "sta rosa 1" to connect jeepney/tricycle/bus paths correctly.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-purple-200 pt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Calculates custom wayposts and overlays standard driving, walking, or biking routes instantly!</span>
+                  </div>
+                </div>
+
+                {/* ABOUT SECTION - Professional and highly polished */}
+                <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-[24px] p-6 shadow-sm space-y-3.5 text-left">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">
+                      About Mooderia Commute
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
+                    Mooderia is an advanced multi-modal navigation portal designed and built to address complex transit routing. In developing nations like the Philippines, public transit is comprised of multi-segment transfers across rail junctions, provincial buses, local jeepneys, and neighborhood tricycles.
+                  </p>
+
+                  <div className="space-y-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-start gap-2.5 text-xs">
+                      <div className="w-5 h-5 bg-purple-50 dark:bg-purple-950/50 rounded-lg flex items-center justify-center text-[#46178f] dark:text-purple-300 font-bold shrink-0 text-[10px]">
+                        1
+                      </div>
+                      <p className="text-slate-550 dark:text-slate-405 leading-normal font-medium">
+                        <strong className="text-slate-700 dark:text-slate-250">Unified Segment Search:</strong> Compare Driving, Transit, Walking, Cycling, and user-defined Jeepney/Tricycle paths side-by-side with localized fare ticket calculators.
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-start gap-2.5 text-xs">
+                      <div className="w-5 h-5 bg-purple-50 dark:bg-purple-950/50 rounded-lg flex items-center justify-center text-[#46178f] dark:text-purple-300 font-bold shrink-0 text-[10px]">
+                        2
+                      </div>
+                      <p className="text-slate-550 dark:text-slate-405 leading-normal font-medium font-sans">
+                        <strong className="text-slate-700 dark:text-slate-250">Offline Local AI Agent:</strong> Ask the integrated local routing AI agent for optimized direction structures. By typing destination labels like <em>"sta rosa 1"</em> or <em>"Manila"</em>, the AI parses stored customs to map continuous journey schemes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PRIVACY SECTION - High density detail demonstrating total transparency */}
+                <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-[24px] p-6 shadow-sm space-y-3.5 text-left">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">
+                      Privacy Pledge &amp; Core Security Vault
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold font-sans">
+                    Your personal data belongs strictly to you. Mooderia executes completely serverless computations inside your local browser storage.
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-3 pt-1">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-750 text-center space-y-1">
+                      <Lock className="w-4.5 h-4.5 text-purple-605 dark:text-purple-305 mx-auto animate-pulse" />
+                      <span className="text-[9px] font-black uppercase text-slate-700 dark:text-stone-300 block">6-PIN Lock</span>
+                      <p className="text-[8px] text-slate-405 dark:text-slate-500 leading-normal">
+                        Secures custom routes via numerical device-level locks.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-755 text-center space-y-1">
+                      <Database className="w-4.5 h-4.5 text-purple-605 dark:text-purple-305 mx-auto" />
+                      <span className="text-[9px] font-black uppercase text-slate-700 dark:text-stone-300 block">100% Local</span>
+                      <p className="text-[8px] text-slate-405 dark:text-slate-500 leading-normal">
+                        Uses sandbox variables to cache custom jeepney stops without clouds.
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-755 text-center space-y-1">
+                      <Globe className="w-4.5 h-4.5 text-purple-605 dark:text-purple-305 mx-auto" />
+                      <span className="text-[9px] font-black uppercase text-slate-700 dark:text-stone-300 block">No Telemetry</span>
+                      <p className="text-[8px] text-slate-405 dark:text-slate-500 leading-normal">
+                        Zero web cookie tracking or analytical reports uploaded to external APIs.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer disclaimer */}
+              <div className="flex justify-between items-center text-[10px] text-slate-405 dark:text-slate-650 font-bold border-t border-slate-200 dark:border-slate-800 pt-4">
+                <span>MOODERIA COMMUTE ENGINE 2.5 • OPEN-SOURCE</span>
+                <span>{phtClock}</span>
+              </div>
+            </div>
+
+            {/* Right Column: Premium Smartphone Simulation frame */}
+            <div className="lg:max-w-[420px] max-w-[390px] flex items-center justify-center shrink-0 h-full py-2 relative">
+              {/* Physical reflection effect glow behind the phone */}
+              <div className="absolute w-[350px] h-[720px] rounded-[52px] bg-purple-500/10 blur-3xl pointer-events-none -z-10"></div>
+
+              <div className="w-[370px] h-[750px] rounded-[48px] border-[12px] border-slate-900 dark:border-slate-800 bg-slate-950 shadow-2xl relative overflow-hidden flex flex-col scale-[1] hover:scale-[1.01] transition-transform duration-300">
+                
+                {/* Physical Front Camera notch bar (Dynamic Island mockup) */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-900 dark:bg-slate-800 rounded-b-2xl z-50 flex items-center justify-center px-4">
+                  <div className="w-2.5 h-2.5 bg-slate-950 dark:bg-slate-900 rounded-full border border-slate-800/20 shrink-0"></div>
+                  <div className="w-2.5 h-1 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-800/20 shrink-0 ml-1"></div>
+                  <div className="flex-1"></div>
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shrink-0"></div>
+                </div>
+
+                <div className="w-full h-full relative overflow-hidden flex flex-col">
+                  {renderPhoneScreen()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        renderPhoneScreen()
+      )}
     </div>
   );
 }
