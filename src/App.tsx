@@ -8,7 +8,7 @@ import MobileShell from './components/MobileShell';
 
 export default function App() {
   return (
-    <div className="w-screen h-screen">
+    <div className="w-full min-h-screen">
       <MobileShell />
     </div>
   );

@@ -13,7 +13,8 @@ body {
   font-family: var(--font-sans);
   background-color: #f5f3ff; /* Elegant minimalist light-purple backplate */
   color: #1e1b4b; /* deep indigo text */
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Custom visual theme classes from the Bold Typography theme */

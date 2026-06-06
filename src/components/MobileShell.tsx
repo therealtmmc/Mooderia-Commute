@@ -448,42 +448,11 @@ export default function MobileShell() {
 
           </motion.div>
 
-          {/* Quick Sandbox Bypass Option */}
-          <motion.div variants={itemVariants} className="text-center pt-3">
-            <button
-              id="dev-sandbox-bypass-btn"
-              onClick={() => {
-                localStorage.setItem('mooderia_bypass_restriction', 'true');
-                setForceApkSimDir(true);
-              }}
-              className="text-[10px] text-purple-600 hover:text-[#6d28d9] dark:text-purple-400 dark:hover:text-purple-300 font-extrabold uppercase tracking-widest underline cursor-pointer"
-            >
-              Simulate APK Container (Developer Sandbox Mode)
-            </button>
-          </motion.div>
-
           <motion.div variants={itemVariants} className="border-t border-slate-200/60 dark:border-slate-800/40 my-6 w-full"></motion.div>
-
-          {/* Footer Navigation Links */}
-          <motion.div variants={itemVariants} className="flex justify-center items-center gap-5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 mb-4 flex-wrap">
-            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
-              Terms &amp; Conditions
-            </button>
-            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
-              Privacy Policy
-            </button>
-            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
-              About the Creator
-            </button>
-          </motion.div>
 
           {/* Core watermark */}
           <motion.div variants={itemVariants} className="flex flex-col items-center justify-center text-[10px] text-slate-400/80 font-bold gap-1 mt-2 pb-8">
-            <span className="flex items-center gap-1 text-[#7c3aed] font-black uppercase text-[10px]">
-              <Sparkles className="w-3.5 h-3.5 fill-current" /> Created with Google AI
-            </span>
-            <span>Mooderia Commute • Philippine Transit Framework v2.5</span>
-            <span>{phtClock}</span>
+            <span>Mooderia Commute</span>
           </motion.div>
 
         </div>
@@ -946,9 +915,9 @@ export default function MobileShell() {
   };
 
   return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen overflow-y-auto overflow-x-hidden bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
+    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
       {isDesktop ? (
-        <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-10 select-text overflow-y-auto">
+        <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-10 select-text">
           <motion.div 
             initial="hidden"
             animate="visible"
@@ -1094,26 +1063,8 @@ export default function MobileShell() {
               <motion.div variants={dItemVariants} className="space-y-4 max-w-2xl">
                 <div className="border-t border-slate-200/60 dark:border-slate-800/40 w-full pt-4"></div>
                 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-slate-400 dark:text-slate-500 gap-4">
-                  <div className="flex items-center gap-5 text-[11px] font-extrabold">
-                    <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
-                      Terms &amp; Conditions
-                    </button>
-                    <button className="hover:text-slate-600 dark:hover:text-[#9174f4] cursor-pointer transition">
-                      Privacy Policy
-                    </button>
-                    <button className="hover:text-slate-600 dark:hover:text-slate-450 cursor-pointer transition">
-                      About the Creator
-                    </button>
-                  </div>
-                  
-                  <div className="flex flex-col sm:items-end text-[10px] font-bold gap-0.5">
-                    <span className="flex items-center gap-1 text-[#7c3aed] font-black uppercase text-[10px]">
-                      <Sparkles className="w-3.5 h-3.5 fill-current" /> Created with Google AI
-                    </span>
-                    <span>Mooderia Commute • Philippine Transit Framework v2.5</span>
-                    <span>{phtClock}</span>
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center text-slate-400 dark:text-slate-500 text-[10px] font-bold">
+                  <span>Mooderia Commute</span>
                 </div>
               </motion.div>
 
