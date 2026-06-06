@@ -873,10 +873,10 @@ export default function MobileShell() {
   };
 
   return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full h-screen bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950`}>
+    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen overflow-y-auto overflow-x-hidden bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950`}>
       {isDesktop ? (
-        <div id="desktop-commute-wrapper" className="w-full h-full overflow-hidden flex items-center justify-center bg-transparent p-4 select-text">
-          <div className="w-full h-full max-w-7xl mx-auto flex lg:flex-row flex-col overflow-hidden text-slate-800 dark:text-slate-100 p-4 lg:p-8 gap-6 lg:gap-10 justify-center items-stretch bg-transparent">
+        <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-8 select-text overflow-y-auto">
+          <div className="w-full max-w-7xl mx-auto flex lg:flex-row flex-col text-slate-800 dark:text-slate-100 gap-6 lg:gap-10 justify-center items-stretch bg-transparent py-4">
             {/* Left Column: Premium Informational Board (bento grid layout matches screenshots) */}
             <div className="flex-1 overflow-y-auto style-scrollbar flex flex-col justify-between space-y-8 pr-4 lg:py-4">
               <div className="space-y-8 text-left">
