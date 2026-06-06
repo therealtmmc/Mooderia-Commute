@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles, Download, Folder, Layers, PieChart, Brain } from 'lucide-react';
+import { motion } from 'motion/react';
 import { db, UserProfile } from '../lib/db';
 import P2PRouting from './P2PRouting';
 import LocalAIAgent from './LocalAIAgent';
@@ -284,14 +285,41 @@ export default function MobileShell() {
   const isDesktop = viewportWidth > 850;
 
   const renderRestrictedMobileBrowser = () => {
+    const containerVariants = {
+      hidden: { opacity: 0 },
+      visible: { 
+        opacity: 1,
+        transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+      }
+    };
+
+    const itemVariants = {
+      hidden: { opacity: 0, y: 15 },
+      visible: { 
+        opacity: 1, 
+        y: 0,
+        transition: { type: 'spring', stiffness: 120, damping: 14 }
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-6 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text">
-        <div className="w-full max-w-md flex flex-col items-start text-left mt-6 mb-7 space-y-4">
+      <motion.div 
+        id="restricted-mobile-viewport"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-6 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text scroll-smooth"
+      >
+        <motion.div variants={itemVariants} className="w-full max-w-md flex flex-col items-start text-left mt-6 mb-7 space-y-4">
           
           {/* Top Shield Icon Badge */}
-          <div className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 3 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0"
+          >
             <ShieldCheck className="w-8 h-8 text-white" />
-          </div>
+          </motion.div>
 
           {/* Heading */}
           <div className="space-y-1">
@@ -306,18 +334,21 @@ export default function MobileShell() {
           <p className="text-slate-600 dark:text-slate-350 text-[14px] leading-relaxed font-semibold">
             For the best immersive and focused commute planning environment on mobile devices, please download our dedicated Android application.
           </p>
-        </div>
+        </motion.div>
 
         <div className="w-full max-w-md space-y-6">
           {/* Download Action Button */}
-          <div className="space-y-4">
-            <button
+          <motion.div variants={itemVariants} className="space-y-4">
+            <motion.button
+              id="restricted-mobile-download-btn"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => triggerApkDownload()}
               className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white py-4 px-6 rounded-2xl text-xs font-black uppercase tracking-wider shadow-[0_12px_32px_rgba(124,58,237,0.25)] hover:shadow-[#7c3aed]/35 transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Download APK for Android</span>
-            </button>
+            </motion.button>
 
             <div className="flex flex-col items-center justify-center gap-1.5 text-[9px] font-black tracking-widest text-[#5c6b73]/70 uppercase">
               <span>Requires Android 8.0 or Higher</span>
@@ -325,13 +356,19 @@ export default function MobileShell() {
                 <Sparkles className="w-3 h-3 fill-current" /> Fully Offline Capable
               </span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Bento Feature Cards */}
-          <div className="space-y-4 pt-4">
+          <motion.div variants={itemVariants} className="space-y-4 pt-4">
             
             {/* Card 1: Route Organization */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start text-left">
+            <motion.div 
+              id="bento-card-mobile-route-org"
+              variants={itemVariants}
+              whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+              whileTap={{ scale: 0.985 }}
+              className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start text-left cursor-pointer transition-shadow"
+            >
               <div className="w-12 h-12 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 shrink-0">
                 <Folder className="w-6 h-6" />
               </div>
@@ -343,13 +380,19 @@ export default function MobileShell() {
                   Structure your daily travel sequences flawlessly with custom waypoint hierarchies and seamless schedule management directly on your mobile device.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Grid 2 Columns: Saved Routes & Analytics */}
+            {/* Grid 2 Columns: Saved Routes & Notes, Analytics */}
             <div className="grid grid-cols-2 gap-4">
               
-              {/* Card 2: Flashcards & Notes */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+              {/* Card 2: Saved Routes & Notes */}
+              <motion.div 
+                id="bento-card-mobile-saved-routes"
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+                whileTap={{ scale: 0.985 }}
+                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left cursor-pointer transition-shadow"
+              >
                 <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
                   <Layers className="w-5 h-5" />
                 </div>
@@ -359,43 +402,56 @@ export default function MobileShell() {
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
                   Create rich transfer notes, custom travel logs, and offline route cards on the go.
                 </p>
-              </div>
+              </motion.div>
 
-              {/* Card 3: Performance Analytics */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+              {/* Card 3: Transit Analytics */}
+              <motion.div 
+                id="bento-card-mobile-analytics"
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+                whileTap={{ scale: 0.985 }}
+                className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left cursor-pointer transition-shadow"
+              >
                 <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
                   <PieChart className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
-                  Performance Analytics
+                  Transit Analytics
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
                   Track your travel durations, fare savings, and route efficiency statistics.
                 </p>
-              </div>
+              </motion.div>
 
             </div>
 
             {/* Card 4: Local Routing Engine (Special purple card) */}
-            <div className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer">
+            <motion.div 
+              id="bento-card-mobile-recall"
+              variants={itemVariants}
+              whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(124, 58, 237, 0.15)" }}
+              whileTap={{ scale: 0.985 }}
+              className="w-full bg-[#7c3aed] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg transition-transform cursor-pointer"
+            >
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0">
                 <Brain className="w-6 h-6" />
               </div>
               <div className="space-y-1 text-left">
                 <h3 className="text-[15px] font-black tracking-tight uppercase">
-                  Academic Recall Engine
+                  Local Routing Engine
                 </h3>
                 <p className="text-xs text-purple-100 font-semibold leading-relaxed">
-                  Maximize retention through interactive study sessions across all your local workspaces.
+                  State-of-the-art offline path processing handles transport networks without relying on network towers.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-          </div>
+          </motion.div>
 
           {/* Quick Sandbox Bypass Option */}
-          <div className="text-center pt-3">
+          <motion.div variants={itemVariants} className="text-center pt-3">
             <button
+              id="dev-sandbox-bypass-btn"
               onClick={() => {
                 localStorage.setItem('mooderia_bypass_restriction', 'true');
                 setForceApkSimDir(true);
@@ -404,12 +460,12 @@ export default function MobileShell() {
             >
               Simulate APK Container (Developer Sandbox Mode)
             </button>
-          </div>
+          </motion.div>
 
-          <div className="border-t border-slate-200/60 dark:border-slate-800/40 my-6 w-full"></div>
+          <motion.div variants={itemVariants} className="border-t border-slate-200/60 dark:border-slate-800/40 my-6 w-full"></motion.div>
 
           {/* Footer Navigation Links */}
-          <div className="flex justify-center items-center gap-5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 mb-4 flex-wrap">
+          <motion.div variants={itemVariants} className="flex justify-center items-center gap-5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 mb-4 flex-wrap">
             <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
               Terms &amp; Conditions
             </button>
@@ -419,19 +475,19 @@ export default function MobileShell() {
             <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
               About the Creator
             </button>
-          </div>
+          </motion.div>
 
           {/* Core watermark */}
-          <div className="flex flex-col items-center justify-center text-[10px] text-slate-400/80 font-bold gap-1 mt-2 pb-8">
+          <motion.div variants={itemVariants} className="flex flex-col items-center justify-center text-[10px] text-slate-400/80 font-bold gap-1 mt-2 pb-8">
             <span className="flex items-center gap-1 text-[#7c3aed] font-black uppercase text-[10px]">
               <Sparkles className="w-3.5 h-3.5 fill-current" /> Created with Google AI
             </span>
             <span>Mooderia Commute • Philippine Transit Framework v2.5</span>
             <span>{phtClock}</span>
-          </div>
+          </motion.div>
 
         </div>
-      </div>
+      </motion.div>
     );
   };
 
@@ -872,20 +928,46 @@ export default function MobileShell() {
     );
   };
 
+  const dContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+    }
+  };
+
+  const dItemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { type: 'spring', stiffness: 125, damping: 14 }
+    }
+  };
+
   return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen overflow-y-auto overflow-x-hidden bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950`}>
+    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen overflow-y-auto overflow-x-hidden bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
       {isDesktop ? (
-        <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-8 select-text overflow-y-auto">
-          <div className="w-full max-w-7xl mx-auto flex lg:flex-row flex-col text-slate-800 dark:text-slate-100 gap-6 lg:gap-10 justify-center items-stretch bg-transparent py-4">
+        <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-10 select-text overflow-y-auto">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={dContainerVariants}
+            className="w-full max-w-7xl mx-auto flex lg:flex-row flex-col text-slate-800 dark:text-slate-100 gap-6 lg:gap-14 justify-center items-start bg-transparent py-4"
+          >
             {/* Left Column: Premium Informational Board (bento grid layout matches screenshots) */}
-            <div className="flex-1 overflow-y-auto style-scrollbar flex flex-col justify-between space-y-8 pr-4 lg:py-4">
-              <div className="space-y-8 text-left">
+            <div className="flex-1 flex flex-col justify-between space-y-10 lg:py-4">
+              <div className="space-y-10 text-left">
                 
                 {/* Brand header badge & heading */}
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0">
+                <motion.div variants={dItemVariants} className="space-y-5">
+                  <motion.div 
+                    whileHover={{ scale: 1.05, rotate: 3 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0"
+                  >
                     <ShieldCheck className="w-8 h-8 text-white" />
-                  </div>
+                  </motion.div>
                   <div className="space-y-1">
                     <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
                       Mooderia Commute
@@ -894,20 +976,23 @@ export default function MobileShell() {
                       Get the Android App.
                     </h2>
                   </div>
-                  <p className="text-slate-650 dark:text-slate-350 text-base leading-relaxed font-semibold max-w-2xl">
+                  <p className="text-slate-650 dark:text-slate-355 text-base leading-relaxed font-semibold max-w-2xl">
                     For the best immersive and focused commute planning environment on mobile devices, please download our dedicated Android application. Full offline navigation is natively packed.
                   </p>
-                </div>
+                </motion.div>
 
                 {/* Hero Download Block */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[28px] shadow-[0_4px_30px_rgba(0,0,0,0.015)] max-w-2xl">
-                  <button
+                <motion.div variants={dItemVariants} className="flex flex-col sm:flex-row sm:items-center gap-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[28px] shadow-[0_4px_30px_rgba(0,0,0,0.015)] max-w-2xl">
+                  <motion.button
+                    id="restricted-desktop-download-btn"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => triggerApkDownload()}
                     className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white py-4 px-6 rounded-2xl text-xs font-black uppercase tracking-wider shadow-[0_12px_32px_rgba(124,58,237,0.22)] transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer text-center"
                   >
                     <Download className="w-4 h-4" />
                     <span>Download APK for Android</span>
-                  </button>
+                  </motion.button>
 
                   <div className="flex flex-col text-left justify-center sm:border-l border-slate-100 dark:border-slate-800 sm:pl-5 gap-1 text-[10px] font-black tracking-widest text-[#5c6b73]/70 uppercase">
                     <span>Requires Android 8.0 or Higher</span>
@@ -915,13 +1000,18 @@ export default function MobileShell() {
                       <Sparkles className="w-3.5 h-3.5 fill-current" /> Fully Offline Capable
                     </span>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Bento Feature Cards */}
-                <div className="space-y-4 max-w-2xl pt-2">
+                <motion.div variants={dItemVariants} className="space-y-4 max-w-2xl pt-2">
                   
                   {/* Card 1: Route Organization */}
-                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start">
+                  <motion.div 
+                    id="bento-card-desktop-route-org"
+                    whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+                    whileTap={{ scale: 0.985 }}
+                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start cursor-pointer transition-shadow"
+                  >
                     <div className="w-12 h-12 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 shrink-0">
                       <Folder className="w-6 h-6" />
                     </div>
@@ -933,13 +1023,18 @@ export default function MobileShell() {
                         Structure your daily travel sequences flawlessly with custom waypoint hierarchies and seamless schedule management directly on your mobile device.
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                  {/* Grid 2 Columns: Saved Routes & Analytics */}
+                  {/* Grid 2 Columns: Saved Routes & Notes, Analytics */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
-                    {/* Card 2: Flashcards & Notes */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                    {/* Card 2: Saved Routes & Notes */}
+                    <motion.div 
+                      id="bento-card-desktop-saved-routes"
+                      whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+                      whileTap={{ scale: 0.985 }}
+                      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left cursor-pointer transition-shadow"
+                    >
                       <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
                         <Layers className="w-5 h-5" />
                       </div>
@@ -949,44 +1044,54 @@ export default function MobileShell() {
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
                         Create rich transfer notes, custom travel logs, and offline route cards on the go.
                       </p>
-                    </div>
+                    </motion.div>
 
-                    {/* Card 3: Performance Analytics */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-805 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                    {/* Card 3: Transit Analytics */}
+                    <motion.div 
+                      id="bento-card-desktop-analytics"
+                      whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(0,0,0,0.03)" }}
+                      whileTap={{ scale: 0.985 }}
+                      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left cursor-pointer transition-shadow"
+                    >
                       <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
                         <PieChart className="w-5 h-5" />
                       </div>
                       <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
-                        Performance Analytics
+                        Transit Analytics
                       </h3>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
                         Track your travel durations, fare savings, and route efficiency statistics.
                       </p>
-                    </div>
+                    </motion.div>
 
                   </div>
 
                   {/* Card 4: Local Routing Engine (Special purple card) */}
-                  <div className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer">
+                  <motion.div 
+                    id="bento-card-desktop-recall"
+                    whileHover={{ y: -4, scale: 1.015, boxShadow: "0 12px 30px rgba(124, 58, 237, 0.15)" }}
+                    whileTap={{ scale: 0.985 }}
+                    className="bg-[#7c3aed] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg transition-transform cursor-pointer"
+                  >
                     <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0">
                       <Brain className="w-6 h-6" />
                     </div>
                     <div className="space-y-1 text-left font-sans">
                       <h3 className="text-[15px] font-black tracking-tight uppercase">
-                        Academic Recall Engine
+                        Local Routing Engine
                       </h3>
                       <p className="text-xs text-purple-100 font-semibold leading-relaxed">
-                        Maximize retention through interactive study sessions across all your local workspaces.
+                        State-of-the-art offline path processing handles transport networks without relying on network towers.
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
 
-                </div>
+                </motion.div>
 
               </div>
 
               {/* Footer block */}
-              <div className="space-y-4 max-w-2xl">
+              <motion.div variants={dItemVariants} className="space-y-4 max-w-2xl">
                 <div className="border-t border-slate-200/60 dark:border-slate-800/40 w-full pt-4"></div>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-slate-400 dark:text-slate-500 gap-4">
@@ -1010,12 +1115,15 @@ export default function MobileShell() {
                     <span>{phtClock}</span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
             </div>
 
-            {/* Right Column: Premium Smartphone Simulation frame */}
-            <div className="lg:max-w-[420px] max-w-[390px] flex items-center justify-center shrink-0 h-full py-2 relative">
+            {/* Right Column: Premium Smartphone Simulation frame (Sticky on scroll) */}
+            <motion.div 
+              variants={dItemVariants} 
+              className="lg:max-w-[420px] max-w-[390px] flex items-center justify-center shrink-0 py-2 relative lg:sticky lg:top-8 self-start"
+            >
               {/* Physical reflection effect glow behind the phone */}
               <div className="absolute w-[350px] h-[720px] rounded-[52px] bg-purple-500/5 blur-3xl pointer-events-none -z-10"></div>
 
@@ -1033,8 +1141,8 @@ export default function MobileShell() {
                   {renderPhoneScreen()}
                 </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       ) : isRestrictedMobileBrowser ? (
         renderRestrictedMobileBrowser()
