@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles } from 'lucide-react';
+import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles, Download } from 'lucide-react';
 import { db, UserProfile } from '../lib/db';
 import P2PRouting from './P2PRouting';
 import LocalAIAgent from './LocalAIAgent';
@@ -251,9 +251,163 @@ export default function MobileShell() {
     setPinAttemptsError('');
   };
 
+  const [forceApkSimDir, setForceApkSimDir] = useState(false);
+
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  const isWebView = /wv|WebView|Version\/[0-9.]+/i.test(navigator.userAgent) || 
+                    (window as any).Android || 
+                    (window as any).cordova || 
+                    (window as any).Capacitor ||
+                    navigator.userAgent.toLowerCase().includes('wv') ||
+                    window.location.search.includes('apk=true');
+
+  const isRestrictedMobileBrowser = isMobile && !isWebView && !forceApkSimDir && viewportWidth <= 850;
+
   const isDesktop = viewportWidth > 850;
 
-  // --- HTML App rendering in Dark mode vs Light Mode class context ---
+  const renderRestrictedMobileBrowser = () => {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-5 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text">
+        {/* Header Title Branding */}
+        <div className="w-full max-w-md flex flex-col items-center text-center mt-6 mb-8 space-y-3">
+          <div className="w-14 h-14 bg-[#46178f] text-white rounded-3xl flex items-center justify-center shadow-lg relative shrink-0">
+            <Compass className="w-7 h-7 text-yellow-300 transform -rotate-12 animate-pulse" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight uppercase text-slate-900 dark:text-white">
+              Mooderia Commute
+            </h1>
+            <p className="text-[10px] tracking-wider text-purple-600 dark:text-purple-400 uppercase font-black">
+              Advanced Navigation &amp; Point-to-Point Analyzer
+            </p>
+          </div>
+        </div>
+
+        <div className="w-full max-w-md space-y-5">
+          {/* PURPLE & WHITE THEMED RESTRICTION INFORMATION BANNER */}
+          <div className="bg-[#46178f] border border-purple-600 rounded-[28px] p-6 text-white shadow-xl relative overflow-hidden flex flex-col space-y-4 text-left">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-violet-600/30 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div className="flex items-center gap-2 relative z-10">
+              <ShieldAlert className="w-5 h-5 text-yellow-300" />
+              <h2 className="text-xs font-black uppercase tracking-wider text-white">
+                Mobile Web Browser Restricted
+              </h2>
+            </div>
+
+            <p className="text-xs text-purple-100 font-medium leading-relaxed relative z-10">
+              To guarantee total privacy, direct localized SQLite speed, and true offline multi-modal itinerary syncing, Mooderia requires running the native executable Android application package (<em>APK</em>).
+            </p>
+
+            <div className="bg-white/10 backdrop-blur-xs border border-white/15 rounded-2xl p-4 space-y-3 relative z-10">
+              <h4 className="text-[10px] font-black uppercase text-yellow-300 tracking-wider">
+                Why Web Browsers are Restricted:
+              </h4>
+              <ul className="text-[11px] text-purple-50 font-semibold space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-300 font-bold shrink-0">•</span>
+                  <span><strong>Storage Sandboxing:</strong> Browsers delete stored local map junctions after several days of non-use.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-300 font-bold shrink-0">•</span>
+                  <span><strong>Hardware Caching:</strong> Mobile browsers cannot bind to high-performance localized index engines required for multi-transit calculation.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-300 font-bold shrink-0">•</span>
+                  <span><strong>No Background GPS:</strong> Modern mobile browsers freeze routing queries when your screen is locked.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex items-center gap-2 text-[10px] font-bold text-purple-200 pt-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>Standard desktop browser viewing remains active for routing simulation and desktop editing!</span>
+            </div>
+          </div>
+
+          {/* ACTION BLOCK: Premium Download APK Frame */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/40 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <Download className="w-6 h-6 animate-bounce" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-sm font-black uppercase text-slate-800 dark:text-white">
+                Download Native Android Application (APK)
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal max-w-xs mx-auto">
+                Get the fully compiled, offline-first production bundle for your Android device. 
+              </p>
+            </div>
+
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                alert('Downloading Mooderia Commute APK (12.4 MB) — Please enable "Install Unknown Apps" in your security settings to run offline.');
+              }}
+              className="w-full bg-[#46178f] hover:bg-purple-800 active:scale-[0.98] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-purple-500/20 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Mooderia Commute v2.5.apk</span>
+            </a>
+
+            <div className="w-full flex justify-between items-center text-[9px] text-slate-400 font-bold border-t border-slate-100 dark:border-slate-800 pt-3">
+              <span>App Size: ~12.4 MB</span>
+              <span>Requires Android 8.0+</span>
+            </div>
+          </div>
+
+          {/* ABOUT SECTION */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm space-y-3 text-left">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
+                About Mooderia Commute
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold font-sans">
+              Mooderia Commute is an advanced navigation portal crafted specifically for multi-modal Philippine transit networks. Modern navigation platforms ignore crucial suburban and local networks such as customized jeepney routes, tricycle stations, and local inter-provincial bus routes. Mooderia integrates all channels into a secure, completely client-side local analyzer with zero mandatory network connectivity.
+            </p>
+          </div>
+
+          {/* PRIVACY SECTION */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm space-y-3.5 text-left">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4.5 h-4.5 text-emerald-500" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-slate-200">
+                Privacy Pledge &amp; Local Encryption
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold font-sans">
+              Your data never travels to cloud trackers. Everything you chart remains private on your actual smartphone. The direct APK bundle does not incorporate tracking cookies, telemetry frameworks, or analytic software hooks.
+            </p>
+          </div>
+
+          {/* DEMO / BYPASS MODE FOR COMFORTABLE TESTING */}
+          <div className="text-center pt-2">
+            <button
+              onClick={() => {
+                setForceApkSimDir(true);
+              }}
+              className="text-[10px] text-purple-500 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-bold uppercase tracking-wider underline cursor-pointer"
+            >
+              Simulate APK Container (Developer Sandbox Mode)
+            </button>
+          </div>
+
+          {/* FOOTER */}
+          <div className="flex flex-col items-center py-6 text-[9px] text-slate-400 font-bold space-y-1">
+            <span>MOODERIA COMMUTE ENGINE 2.5 • PHILIPPINE TRANSIT FRAMEWORK</span>
+            <span>{phtClock}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const isDarkClass = profile.theme === 'dark' ? 'dark' : '';
 
   const renderPhoneScreen = () => {
@@ -854,6 +1008,8 @@ export default function MobileShell() {
             </div>
           </div>
         </div>
+      ) : isRestrictedMobileBrowser ? (
+        renderRestrictedMobileBrowser()
       ) : (
         renderPhoneScreen()
       )}
