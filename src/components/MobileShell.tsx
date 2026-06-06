@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles, Download } from 'lucide-react';
+import { Compass, Database, MessageSquare, Laptop, User, ShieldAlert, Key, RefreshCw, Star, Pocket, ChevronRight, Lock, CheckCircle2, ShieldCheck, HelpCircle, Info, Globe, Sparkles, Download, Folder, Layers, PieChart, Brain } from 'lucide-react';
 import { db, UserProfile } from '../lib/db';
 import P2PRouting from './P2PRouting';
 import LocalAIAgent from './LocalAIAgent';
@@ -256,22 +256,13 @@ export default function MobileShell() {
   });
 
   const triggerApkDownload = () => {
-    // Generate an exquisite client-side signature mimicking the actual Android binary file
-    const fileHeader = "Mooderia Commute - Native Mobile Android Package v2.5\n" +
-                        "Status: Live Production Signed Node\n" +
-                        "Build Mode: Release Relational Native Package\n" +
-                        "Target: Android Pie 9.0+ / API 28+\n" +
-                        "Checksum String: d39a7b140fe381283e16b9b2478546178f0141b993cf93\n\n" +
-                        "Thank you for downloading Mooderia Commute! Place this APK directly into your device to activate fully local, zero-cookie transit computations.";
-    const blob = new Blob([fileHeader], { type: 'application/vnd.android.package-archive' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.download = 'mooderia-commute-v2.5.apk';
+    link.href = 'https://drive.google.com/file/d/1pwxzM9C3eperhWElv8xLpXPQnil267LM/view?usp=drivesdk';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -294,154 +285,151 @@ export default function MobileShell() {
 
   const renderRestrictedMobileBrowser = () => {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fbfbfe] via-[#faf9ff] to-[#f5f3fa] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col items-center justify-start p-6 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text">
-        {/* Header Title Branding */}
-        <div className="w-full max-w-md flex flex-col items-center text-center mt-6 mb-8 space-y-3">
-          <div className="w-14 h-14 bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950 rounded-2xl flex items-center justify-center shadow-[0_8px_30px_rgb(124,58,237,0.06)] relative shrink-0">
-            <Compass className="w-7 h-7 text-purple-600 dark:text-purple-400 animate-pulse" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-6 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text">
+        <div className="w-full max-w-md flex flex-col items-start text-left mt-6 mb-7 space-y-4">
+          
+          {/* Top Shield Icon Badge */}
+          <div className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0">
+            <ShieldCheck className="w-8 h-8 text-white" />
           </div>
-          <div>
-            <h1 className="text-2xl font-black bg-gradient-to-r from-purple-900 to-indigo-600 bg-clip-text text-transparent dark:from-purple-300 dark:to-indigo-200 tracking-tight uppercase">
+
+          {/* Heading */}
+          <div className="space-y-1">
+            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
               Mooderia Commute
             </h1>
-            <p className="text-[10px] tracking-widest text-purple-600 dark:text-purple-405 uppercase font-black">
-              Advanced Navigation &amp; Point-to-Point Analyzer
-            </p>
+            <h2 className="text-3xl font-bold text-slate-400 dark:text-slate-500 font-sans tracking-tight">
+              Get the Android App.
+            </h2>
           </div>
+
+          <p className="text-slate-600 dark:text-slate-350 text-[14px] leading-relaxed font-semibold">
+            For the best immersive and focused commute planning environment on mobile devices, please download our dedicated Android application.
+          </p>
         </div>
 
-        <div className="w-full max-w-md space-y-5">
-          {/* PURPLE & WHITE THEMED RESTRICTION INFORMATION BANNER */}
-          <div className="bg-white dark:bg-slate-900/90 border border-purple-100 dark:border-purple-950/60 rounded-[28px] p-6 text-slate-700 dark:text-slate-200 shadow-[0_12px_45px_rgba(124,58,237,0.03)] relative overflow-hidden flex flex-col space-y-4 text-left">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-violet-600/5 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="w-full max-w-md space-y-6">
+          {/* Download Action Button */}
+          <div className="space-y-4">
+            <button
+              onClick={() => triggerApkDownload()}
+              className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white py-4 px-6 rounded-2xl text-xs font-black uppercase tracking-wider shadow-[0_12px_32px_rgba(124,58,237,0.25)] hover:shadow-[#7c3aed]/35 transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download APK for Android</span>
+            </button>
 
-            <div className="flex items-center gap-2 relative z-10 border-b border-purple-50/50 dark:border-purple-950/20 pb-3">
-              <ShieldAlert className="w-5 h-5 text-purple-600 dark:text-purple-450 animate-bounce" />
-              <div>
-                <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                  Local Security Framework
-                </h2>
-                <p className="text-[9px] font-extrabold uppercase text-[#7c3aed]">Web Protection Restricted</p>
+            <div className="flex flex-col items-center justify-center gap-1.5 text-[9px] font-black tracking-widest text-[#5c6b73]/70 uppercase">
+              <span>Requires Android 8.0 or Higher</span>
+              <span className="text-[#7c3aed] dark:text-purple-405 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 fill-current" /> Fully Offline Capable
+              </span>
+            </div>
+          </div>
+
+          {/* Bento Feature Cards */}
+          <div className="space-y-4 pt-4">
+            
+            {/* Card 1: Route Organization */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start text-left">
+              <div className="w-12 h-12 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 shrink-0">
+                <Folder className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                  Route Organization
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                  Structure your daily travel sequences flawlessly with custom waypoint hierarchies and seamless schedule management directly on your mobile device.
+                </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-350 font-medium leading-relaxed relative z-10">
-              To guarantee total privacy, zero trace tracking, and robust offline multi-modal calculations, Mooderia enforces native containment. Standard mobile browsers run in restricted multi-threaded sandboxes which prevent continuous database mapping.
-            </p>
+            {/* Grid 2 Columns: Saved Routes & Analytics */}
+            <div className="grid grid-cols-2 gap-4">
+              
+              {/* Card 2: Flashcards & Notes */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                  Saved Routes &amp; Notes
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
+                  Create rich transfer notes, custom travel logs, and offline route cards on the go.
+                </p>
+              </div>
 
-            <div className="bg-purple-50/30 dark:bg-purple-950/10 rounded-2xl p-4 space-y-3 relative z-10 border border-purple-100/30 dark:border-purple-950/30">
-              <h4 className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-305 tracking-wider flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                Browser Constraints:
-              </h4>
-              <ul className="text-[11px] text-slate-650 dark:text-slate-400 font-semibold space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-600 font-extrabold shrink-0">•</span>
-                  <span><strong>Memory Limit:</strong> Standard browsers delete indexed local map coordinates during caching sweeps.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-600 font-extrabold shrink-0">•</span>
-                  <span><strong>Concurrency:</strong> SQLite multithreading is severely throttled inside public mobile web frames.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-600 font-extrabold shrink-0">•</span>
-                  <span><strong>Background Suspension:</strong> Smart routing triggers freeze when mobile tabs go in background.</span>
-                </li>
-              </ul>
+              {/* Card 3: Performance Analytics */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-5 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
+                  <PieChart className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                  Performance Analytics
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
+                  Track your travel durations, fare savings, and route efficiency statistics.
+                </p>
+              </div>
+
             </div>
 
-            <div className="flex items-center gap-2 text-[10px] font-bold text-[#7c3aed] dark:text-purple-305 pt-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
-              <span>Full desktop browser workspace remains operational for direction simulation!</span>
+            {/* Card 4: Local Routing Engine (Special purple card) */}
+            <div className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0">
+                <Brain className="w-6 h-6" />
+              </div>
+              <div className="space-y-1 text-left">
+                <h3 className="text-[15px] font-black tracking-tight uppercase">
+                  Academic Recall Engine
+                </h3>
+                <p className="text-xs text-purple-100 font-semibold leading-relaxed">
+                  Maximize retention through interactive study sessions across all your local workspaces.
+                </p>
+              </div>
             </div>
+
           </div>
 
-          {/* ACTION BLOCK: Premium Download APK Frame */}
-          <div className="bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950 rounded-[28px] p-6 shadow-[0_12px_45px_rgba(124,58,237,0.03)] flex flex-col items-center text-center space-y-4">
-            <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950/40 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-400">
-              <Download className="w-6 h-6 animate-pulse" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-sm font-black uppercase text-slate-900 dark:text-white">
-                Download Native Android Executable (APK)
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal max-w-xs mx-auto font-semibold">
-                Tap below to instantly download the full offline bundle directly to your Android file system.
-              </p>
-            </div>
-
-            <div className="w-full space-y-2.5">
-              <button
-                onClick={() => triggerApkDownload()}
-                className="w-full bg-[#7c3aed] hover:bg-purple-700 active:scale-[0.98] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-purple-500/20 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4 animate-bounce" />
-                <span>Download Mooderia Commute v2.5.apk</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  localStorage.setItem('mooderia_bypass_restriction', 'true');
-                  setForceApkSimDir(true);
-                }}
-                className="w-full bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-400 hover:bg-purple-50/30 dark:hover:bg-purple-950/20 active:scale-[0.98] py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-[#7c3aed]" />
-                <span>Enter App (APK Container Verified)</span>
-              </button>
-            </div>
-
-            <div className="w-full flex justify-between items-center text-[9px] text-slate-400 dark:text-slate-550 font-bold border-t border-purple-100/20 dark:border-purple-950/30 pt-3">
-              <span>App Size: ~12.4 MB</span>
-              <span>Requires Android 8.0+</span>
-            </div>
-          </div>
-
-          {/* ABOUT SECTION */}
-          <div className="bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950 rounded-[28px] p-6 shadow-sm space-y-3 text-left">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4.5 h-4.5 text-purple-600 dark:text-purple-450" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#7c3aed]">
-                About Mooderia Commute
-              </h3>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold font-sans">
-              Mooderia Commute is an advanced navigation portal crafted specifically for multi-modal Philippine transit networks. Modern navigation platforms ignore crucial suburban and local networks such as customized jeepney routes, tricycle stations, and local inter-provincial bus routes. Mooderia integrates all channels into a secure, completely client-side local analyzer with zero mandatory network connectivity.
-            </p>
-          </div>
-
-          {/* PRIVACY SECTION */}
-          <div className="bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950 rounded-[28px] p-6 shadow-sm space-y-3.5 text-left">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4.5 h-4.5 text-purple-600 dark:text-purple-400" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#7c3aed]">
-                Privacy Pledge &amp; Local Encryption
-              </h3>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold font-sans">
-              Your data never travels to cloud trackers. Everything you chart remains private on your actual smartphone. The direct APK bundle does not incorporate tracking cookies, telemetry frameworks, or analytic software hooks.
-            </p>
-          </div>
-
-          {/* DEMO / BYPASS MODE FOR COMFORTABLE TESTING */}
-          <div className="text-center pt-2">
+          {/* Quick Sandbox Bypass Option */}
+          <div className="text-center pt-3">
             <button
               onClick={() => {
+                localStorage.setItem('mooderia_bypass_restriction', 'true');
                 setForceApkSimDir(true);
               }}
-              className="text-[10px] text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-extrabold uppercase tracking-wider underline cursor-pointer"
+              className="text-[10px] text-purple-600 hover:text-[#6d28d9] dark:text-purple-400 dark:hover:text-purple-300 font-extrabold uppercase tracking-widest underline cursor-pointer"
             >
               Simulate APK Container (Developer Sandbox Mode)
             </button>
           </div>
 
-          {/* FOOTER */}
-          <div className="flex flex-col items-center py-6 text-[9px] text-slate-400 dark:text-slate-550 font-bold space-y-1">
-            <span>MOODERIA COMMUTE ENGINE 2.5 • PHILIPPINE TRANSIT FRAMEWORK</span>
+          <div className="border-t border-slate-200/60 dark:border-slate-800/40 my-6 w-full"></div>
+
+          {/* Footer Navigation Links */}
+          <div className="flex justify-center items-center gap-5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 mb-4 flex-wrap">
+            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
+              Terms &amp; Conditions
+            </button>
+            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
+              Privacy Policy
+            </button>
+            <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
+              About the Creator
+            </button>
+          </div>
+
+          {/* Core watermark */}
+          <div className="flex flex-col items-center justify-center text-[10px] text-slate-400/80 font-bold gap-1 mt-2 pb-8">
+            <span className="flex items-center gap-1 text-[#7c3aed] font-black uppercase text-[10px]">
+              <Sparkles className="w-3.5 h-3.5 fill-current" /> Created with Google AI
+            </span>
+            <span>Mooderia Commute • Philippine Transit Framework v2.5</span>
             <span>{phtClock}</span>
           </div>
+
         </div>
       </div>
     );
@@ -889,180 +877,141 @@ export default function MobileShell() {
       {isDesktop ? (
         <div id="desktop-commute-wrapper" className="w-full h-full overflow-hidden flex items-center justify-center bg-transparent p-4 select-text">
           <div className="w-full h-full max-w-7xl mx-auto flex lg:flex-row flex-col overflow-hidden text-slate-800 dark:text-slate-100 p-4 lg:p-8 gap-6 lg:gap-10 justify-center items-stretch bg-transparent">
-            {/* Left Column: Premium Informational Board (purple/white themed sections + about + privacy) */}
-            <div className="flex-1 overflow-y-auto style-scrollbar flex flex-col justify-between space-y-6 pr-2 lg:py-2">
-              <div className="space-y-6">
-                {/* App Header Title Branding */}
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950 rounded-2xl flex items-center justify-center shadow-[0_8px_30px_rgb(124,58,237,0.06)] relative shrink-0">
-                    <Compass className="w-6 h-6 text-purple-600 dark:text-purple-400 animate-pulse" />
+            {/* Left Column: Premium Informational Board (bento grid layout matches screenshots) */}
+            <div className="flex-1 overflow-y-auto style-scrollbar flex flex-col justify-between space-y-8 pr-4 lg:py-4">
+              <div className="space-y-8 text-left">
+                
+                {/* Brand header badge & heading */}
+                <div className="space-y-4">
+                  <div className="w-16 h-16 bg-[#7c3aed] rounded-[24px] flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.22)] shrink-0">
+                    <ShieldCheck className="w-8 h-8 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-black bg-gradient-to-r from-purple-900 to-indigo-600 bg-clip-text text-transparent dark:from-purple-300 dark:to-indigo-200 tracking-tight uppercase">
+                  <div className="space-y-1">
+                    <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
                       Mooderia Commute
                     </h1>
-                    <p className="text-[10px] tracking-widest text-[#7c3aed] dark:text-purple-400 uppercase font-black">
-                      Advanced Navigation &amp; Point-to-Point Analyzer
-                    </p>
-                  </div>
-                </div>
-
-                {/* PREMIUM DOWNLOAD WORKSPACE HERO ACTION PANEL */}
-                <div className="bg-white dark:bg-slate-900/90 border border-purple-100/90 dark:border-purple-950/75 rounded-[28px] p-6 shadow-[0_12px_45px_rgba(124,58,237,0.02)] relative overflow-hidden flex flex-col space-y-4 text-left">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                  
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-purple-50/55 dark:border-purple-950/20 pb-4">
-                    <div className="space-y-1">
-                      <span className="text-[8px] tracking-wider font-extrabold uppercase px-2 py-0.5 bg-purple-50 dark:bg-purple-950/40 text-[#7c3aed] dark:text-purple-300 rounded-full border border-purple-100/30">
-                        Executable Binary Bundle
-                      </span>
-                      <h2 className="text-sm font-black uppercase text-slate-900 dark:text-stone-100 pt-0.5">
-                        Mooderia Standalone Applet
-                      </h2>
-                    </div>
-
-                    <button
-                      onClick={() => triggerApkDownload()}
-                      className="cursor-pointer bg-[#7c3aed] hover:bg-purple-700 active:scale-[0.98] text-white py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm transition-all duration-150 flex items-center justify-center gap-2"
-                    >
-                      <Download className="w-3.5 h-3.5 animate-bounce" />
-                      <span>Download Android APK</span>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950/50 p-3 rounded-2xl border border-purple-100/30 dark:border-purple-950/10 text-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Stability</span>
-                      <p className="text-[11px] text-slate-700 dark:text-slate-350 font-black mt-0.5">v2.5 Stable</p>
-                    </div>
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950/50 p-3 rounded-2xl border border-purple-100/30 dark:border-purple-950/10 text-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Size</span>
-                      <p className="text-[11px] text-slate-700 dark:text-slate-350 font-black mt-0.5">12.4 MB</p>
-                    </div>
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950/50 p-3 rounded-2xl border border-purple-100/30 dark:border-purple-950/10 text-center">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Architecture</span>
-                      <p className="text-[11px] text-slate-700 dark:text-slate-350 font-black mt-0.5">ARM64 Node</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* IMPORTANT INFORMATION SECTION - White & Violet Clean layout */}
-                <div className="bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-950/60 rounded-[28px] p-6 text-slate-700 dark:text-slate-200 shadow-[0_8px_30px_rgba(124,58,237,0.02)] relative overflow-hidden flex flex-col space-y-4 text-left">
-                  <div className="absolute -top-10 -right-10 w-44 h-44 bg-purple-500/5 rounded-full blur-2xl pointer-events-none"></div>
-
-                  <div className="flex items-center gap-2 relative z-10">
-                    <ShieldAlert className="w-5 h-5 text-purple-600 dark:text-purple-400 animate-pulse" />
-                    <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                      Important Desktop Commuter Information
+                    <h2 className="text-3xl font-bold text-slate-400 dark:text-slate-500 font-sans tracking-tight">
+                      Get the Android App.
                     </h2>
                   </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-350 font-medium leading-relaxed relative z-10">
-                    To provide highly accurate point-to-point commuting computations, Mooderia isolates tricycle, jeepney, P2P bus, train, and walking corridors natively on your device. Standard maps often ignore these hyper-local pathways.
+                  <p className="text-slate-650 dark:text-slate-350 text-base leading-relaxed font-semibold max-w-2xl">
+                    For the best immersive and focused commute planning environment on mobile devices, please download our dedicated Android application. Full offline navigation is natively packed.
                   </p>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-3 relative z-10 pt-1">
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950/40 border border-purple-100/40 dark:border-purple-950/20 rounded-xl p-3.5 space-y-1">
-                      <span className="text-[9px] font-black uppercase text-purple-700 dark:text-purple-305 block">Interactive Mobile Sandbox</span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal">
-                        Utilize the physical smartphone emulator on the right to simulate live GPS movements, toggle night/dark modes, and calculate accurate fares.
-                      </p>
-                    </div>
+                {/* Hero Download Block */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[28px] shadow-[0_4px_30px_rgba(0,0,0,0.015)] max-w-2xl">
+                  <button
+                    onClick={() => triggerApkDownload()}
+                    className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] active:scale-[0.98] text-white py-4 px-6 rounded-2xl text-xs font-black uppercase tracking-wider shadow-[0_12px_32px_rgba(124,58,237,0.22)] transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer text-center"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download APK for Android</span>
+                  </button>
 
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950/40 border border-purple-100/40 dark:border-purple-950/20 rounded-xl p-3.5 space-y-1">
-                      <span className="text-[9px] font-black uppercase text-purple-700 dark:text-purple-305 block">Route Specific Numbers</span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal">
-                        Ensure you input customized route numbers (e.g. 12A, JRT-1) and specify continuous routes like "sta rosa 1" to connect jeepney/tricycle/bus paths correctly.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-purple-600 dark:text-purple-300 pt-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                    <span>Calculates custom wayposts and overlays standard driving, walking, or biking routes instantly!</span>
+                  <div className="flex flex-col text-left justify-center sm:border-l border-slate-100 dark:border-slate-800 sm:pl-5 gap-1 text-[10px] font-black tracking-widest text-[#5c6b73]/70 uppercase">
+                    <span>Requires Android 8.0 or Higher</span>
+                    <span className="text-[#7c3aed] dark:text-purple-405 flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 fill-current" /> Fully Offline Capable
+                    </span>
                   </div>
                 </div>
 
-                {/* ABOUT SECTION - Professional and highly polished */}
-                <div className="bg-white dark:bg-slate-900/80 border border-purple-100/50 dark:border-purple-950/50 rounded-[24px] p-6 shadow-sm space-y-3.5 text-left">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-stone-100">
-                      About Mooderia Commute
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">
-                    Mooderia is an advanced multi-modal navigation portal designed and built to address complex transit routing. In developing nations like the Philippines, public transit is comprised of multi-segment transfers across rail junctions, provincial buses, local jeepneys, and neighborhood tricycles.
-                  </p>
-
-                  <div className="space-y-2.5 pt-2.5 border-t border-purple-100/30 dark:border-purple-950/20">
-                    <div className="flex items-start gap-2.5 text-xs">
-                      <div className="w-5 h-5 bg-purple-50 dark:bg-purple-950/50 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-300 font-bold shrink-0 text-[10px]">
-                        1
-                      </div>
-                      <p className="text-slate-500 dark:text-slate-400 leading-normal font-semibold">
-                        <strong className="text-slate-800 dark:text-slate-200 font-black">Unified Segment Search:</strong> Compare Driving, Transit, Walking, Cycling, and user-defined Jeepney/Tricycle paths side-by-side with localized fare ticket calculators.
+                {/* Bento Feature Cards */}
+                <div className="space-y-4 max-w-2xl pt-2">
+                  
+                  {/* Card 1: Route Organization */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex gap-4 items-start">
+                    <div className="w-12 h-12 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 shrink-0">
+                      <Folder className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1 font-sans">
+                      <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                        Route Organization
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                        Structure your daily travel sequences flawlessly with custom waypoint hierarchies and seamless schedule management directly on your mobile device.
                       </p>
                     </div>
+                  </div>
+
+                  {/* Grid 2 Columns: Saved Routes & Analytics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     
-                    <div className="flex items-start gap-2.5 text-xs">
-                      <div className="w-5 h-5 bg-purple-50 dark:bg-purple-950/50 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-300 font-bold shrink-0 text-[10px]">
-                        2
+                    {/* Card 2: Flashcards & Notes */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                      <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
+                        <Layers className="w-5 h-5" />
                       </div>
-                      <p className="text-slate-500 dark:text-slate-400 leading-normal font-semibold font-sans">
-                        <strong className="text-slate-800 dark:text-slate-200 font-black">Offline Local AI Agent:</strong> Ask the integrated local routing AI agent for optimized direction structures. By typing destination labels like <em>"sta rosa 1"</em> or <em>"Manila"</em>, the AI parses stored customs to map continuous journey schemes.
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                        Saved Routes &amp; Notes
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
+                        Create rich transfer notes, custom travel logs, and offline route cards on the go.
+                      </p>
+                    </div>
+
+                    {/* Card 3: Performance Analytics */}
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-805 rounded-[28px] p-6 shadow-[0_4px_25px_rgba(0,0,0,0.015)] flex flex-col items-start text-left">
+                      <div className="w-11 h-11 bg-[#7c3aed]/5 dark:bg-[#7c3aed]/10 rounded-2xl flex items-center justify-center text-[#7c3aed] dark:text-purple-300 mb-4 shrink-0">
+                        <PieChart className="w-5 h-5" />
+                      </div>
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-stone-100 tracking-tight">
+                        Performance Analytics
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed font-semibold">
+                        Track your travel durations, fare savings, and route efficiency statistics.
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* Card 4: Local Routing Engine (Special purple card) */}
+                  <div className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white p-6 rounded-[28px] flex items-center gap-4 shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shrink-0">
+                      <Brain className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1 text-left font-sans">
+                      <h3 className="text-[15px] font-black tracking-tight uppercase">
+                        Academic Recall Engine
+                      </h3>
+                      <p className="text-xs text-purple-100 font-semibold leading-relaxed">
+                        Maximize retention through interactive study sessions across all your local workspaces.
                       </p>
                     </div>
                   </div>
+
                 </div>
 
-                {/* PRIVACY SECTION - High density detail demonstrating total transparency */}
-                <div className="bg-white dark:bg-slate-900/80 border border-purple-100/50 dark:border-purple-950/50 rounded-[24px] p-6 shadow-sm space-y-3.5 text-left">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-stone-100">
-                      Privacy Pledge &amp; Core Security Vault
-                    </h3>
+              </div>
+
+              {/* Footer block */}
+              <div className="space-y-4 max-w-2xl">
+                <div className="border-t border-slate-200/60 dark:border-slate-800/40 w-full pt-4"></div>
+                
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-slate-400 dark:text-slate-500 gap-4">
+                  <div className="flex items-center gap-5 text-[11px] font-extrabold">
+                    <button className="hover:text-slate-600 dark:hover:text-slate-400 cursor-pointer transition">
+                      Terms &amp; Conditions
+                    </button>
+                    <button className="hover:text-slate-600 dark:hover:text-[#9174f4] cursor-pointer transition">
+                      Privacy Policy
+                    </button>
+                    <button className="hover:text-slate-600 dark:hover:text-slate-450 cursor-pointer transition">
+                      About the Creator
+                    </button>
                   </div>
-
-                  <p className="text-xs text-slate-650 dark:text-slate-400 leading-relaxed font-semibold font-sans">
-                    Your personal data belongs strictly to you. Mooderia executes completely serverless computations inside your local browser storage.
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-3 pt-1">
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950 p-3 rounded-xl border border-purple-100/30 dark:border-purple-950/10 text-center space-y-1">
-                      <Lock className="w-4.5 h-4.5 text-purple-600 dark:text-purple-350 mx-auto animate-pulse" />
-                      <span className="text-[9px] font-black uppercase text-slate-800 dark:text-stone-300 block">6-PIN Lock</span>
-                      <p className="text-[8px] text-slate-450 dark:text-slate-500 leading-normal font-semibold">
-                        Secures custom routes via numerical device-level locks.
-                      </p>
-                    </div>
-
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950 p-3 rounded-xl border border-purple-100/30 dark:border-purple-950/10 text-center space-y-1">
-                      <Database className="w-4.5 h-4.5 text-purple-600 dark:text-purple-355 mx-auto" />
-                      <span className="text-[9px] font-black uppercase text-slate-800 dark:text-stone-300 block">100% Local</span>
-                      <p className="text-[8px] text-slate-450 dark:text-slate-500 leading-normal font-semibold">
-                        Uses sandbox variables to cache custom jeepney stops without clouds.
-                      </p>
-                    </div>
-
-                    <div className="bg-[#fbfbfe] dark:bg-slate-950 p-3 rounded-xl border border-purple-100/30 dark:border-purple-950/10 text-center space-y-1">
-                      <Globe className="w-4.5 h-4.5 text-purple-600 dark:text-purple-355 mx-auto" />
-                      <span className="text-[9px] font-black uppercase text-slate-800 dark:text-stone-300 block">No Telemetry</span>
-                      <p className="text-[8px] text-slate-450 dark:text-slate-500 leading-normal font-semibold">
-                        Zero web cookie tracking or analytical reports uploaded to external APIs.
-                      </p>
-                    </div>
+                  
+                  <div className="flex flex-col sm:items-end text-[10px] font-bold gap-0.5">
+                    <span className="flex items-center gap-1 text-[#7c3aed] font-black uppercase text-[10px]">
+                      <Sparkles className="w-3.5 h-3.5 fill-current" /> Created with Google AI
+                    </span>
+                    <span>Mooderia Commute • Philippine Transit Framework v2.5</span>
+                    <span>{phtClock}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Footer disclaimer */}
-              <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-600 font-bold border-t border-purple-100/20 dark:border-purple-950/15 pt-4">
-                <span>MOODERIA COMMUTE ENGINE 2.5 • OPEN-SOURCE</span>
-                <span>{phtClock}</span>
-              </div>
             </div>
 
             {/* Right Column: Premium Smartphone Simulation frame */}
