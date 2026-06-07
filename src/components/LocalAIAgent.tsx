@@ -869,7 +869,15 @@ data class Waypoint(val name: String, val lat: Double, val lng: Double)
 class MediaPipeLlmWorker(private val context: Context) {
 
     private var llmInference: LlmInference? = null
-    private val modelFileName = "gemma-2b-it-cpu.bin"
+    val modelFileName = "gemma-2b-it-gpu-int4.bin"
+
+    /**
+     * Checks if the 1.45 GB gemma regional transit database file exists locally.
+     */
+    fun isModelDownloaded(): Boolean {
+        val modelFile = java.io.File(context.filesDir, modelFileName)
+        return modelFile.exists() && modelFile.length() > 100 * 1024 * 1024
+    }
 
     /**
      * Copy the big model gemma binary from assets/ folder to internal storage.
@@ -987,6 +995,12 @@ object ResponseParser {
 
   const screenKotlin = `package com.mooderia.commute.ui.screens
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.location.Location
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -1001,6 +1015,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -1008,6 +1023,7 @@ import androidx.compose.ui.unit.sp
 import com.mooderia.commute.data.ai.Waypoint
 import com.mooderia.commute.data.ai.ResponseParser
 import com.mooderia.commute.data.ai.MediaPipeLlmWorker
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -1022,11 +1038,100 @@ fun MainAppNavigationShell(
     currentManeuver: String,
     onReportIncident: (String) -> Unit
 ) {
+    val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("AI Commute Guide", "Waze Direction Guide")
 
     var aiTextResponse by remember { mutableStateOf("") }
     val aiWaypoints = remember { mutableStateListOf<Waypoint>() }
+
+    // 1. Local File Existence Checker state
+    var isAiModelDownloaded by remember { mutableStateOf(worker.isModelDownloaded()) }
+    var downloadId by remember { mutableLongStateOf(-1L) }
+    var downloadProgress by remember { mutableFloatStateOf(0f) }
+    var downloadStatusText by remember { mutableStateOf("") }
+    var isDownloading by remember { mutableStateOf(false) }
+
+    // Check on init
+    LaunchedEffect(Unit) {
+        isAiModelDownloaded = worker.isModelDownloaded()
+    }
+
+    // 5. Dynamic Access Unlock: BroadcastReceiver for ACTION_DOWNLOAD_COMPLETE
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+                if (id == downloadId && id != -1L) {
+                    val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                    val query = DownloadManager.Query().setFilterById(id)
+                    val cursor = dm.query(query)
+                    if (cursor != null && cursor.moveToFirst()) {
+                        val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        if (statusIdx != -1) {
+                            val status = cursor.getInt(statusIdx)
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                isAiModelDownloaded = true
+                                isDownloading = false
+                                downloadProgress = 1.0f
+                            }
+                        }
+                        cursor.close()
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
+
+    // 4. Live Download Percentage Tracking Task Loop
+    LaunchedEffect(isDownloading, downloadId) {
+        if (isDownloading && downloadId != -1L) {
+            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            while (isDownloading) {
+                delay(1000)
+                val query = DownloadManager.Query().setFilterById(downloadId)
+                val cursor = downloadManager.query(query)
+                if (cursor != null && cursor.moveToFirst()) {
+                    val bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                    val bytesTotalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+
+                    if (bytesDownloadedIndex != -1 && bytesTotalIndex != -1) {
+                        val downloadedBytes = cursor.getLong(bytesDownloadedIndex)
+                        val totalBytes = cursor.getLong(bytesTotalIndex)
+                        val status = cursor.getInt(statusIndex)
+
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            isAiModelDownloaded = true
+                            isDownloading = false
+                            downloadProgress = 1.0f
+                        } else if (status == DownloadManager.STATUS_FAILED) {
+                            isDownloading = false
+                            downloadStatusText = "Database download failed, retrying..."
+                        } else if (totalBytes > 0) {
+                            downloadProgress = downloadedBytes.toFloat() / totalBytes.toFloat()
+                            val downloadedGB = downloadedBytes.toDouble() / (1024 * 1024 * 1024)
+                            val totalGB = totalBytes.toDouble() / (1024 * 1024 * 1024)
+                            
+                            val displayTotal = if (totalGB <= 0.0) 1.45 else totalGB
+                            val displayDownloaded = if (totalGB <= 0.0) downloadProgress * 1.45 else downloadedGB
+                            val percentage = (downloadProgress * 100).toInt()
+
+                            downloadStatusText = "Downloading Offline Brain... \${String.format(\"%.2f\", displayDownloaded)} GB / \${String.format(\"%.2f\", displayTotal)} GB (\${percentage}%)"
+                        } else {
+                            downloadStatusText = "Connecting and allocating offline space (1.45 GB)..."
+                        }
+                    }
+                    cursor.close()
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -1073,18 +1178,50 @@ fun MainAppNavigationShell(
                 .padding(innerPadding)
         ) {
             when (selectedTab) {
-                // SCREEN 1: AI Transportation Assistant & Autopilot route injectors
+                // SCREEN 1: AI Transportation Assistant with Lockout Gate
                 0 -> {
-                    AiCommutePlannerScreen(
-                        worker = worker,
-                        aiTextResponse = aiTextResponse,
-                        waypointsList = aiWaypoints,
-                        onResponseParsed = { text, waypoints ->
-                            aiTextResponse = text
-                            aiWaypoints.clear()
-                            aiWaypoints.addAll(waypoints)
+                    if (!isAiModelDownloaded) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF0F0F14)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AiGateLockoutScreen(
+                                isDownloading = isDownloading,
+                                downloadProgress = downloadProgress,
+                                downloadStatusText = downloadStatusText,
+                                onDownloadClicked = {
+                                    try {
+                                        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                                        val uri = Uri.parse("https://huggingface.co/Mooderia/ph-transit-brain/resolve/main/gemma-2b-it-gpu-int4.bin?download=true")
+                                        val request = DownloadManager.Request(uri)
+                                            .setTitle("Regional Transit Database File")
+                                            .setDescription("Offline Gemma Neural Brain (1.45 GB)")
+                                            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                            .setDestinationUri(Uri.fromFile(java.io.File(context.filesDir, worker.modelFileName)))
+                                        
+                                        downloadId = downloadManager.enqueue(request)
+                                        isDownloading = true
+                                        downloadStatusText = "Initializing secure data tunnel..."
+                                    } catch (e: Exception) {
+                                        downloadStatusText = "Failed to start download: \\\${e.message}"
+                                    }
+                                }
+                            )
                         }
-                    )
+                    } else {
+                        AiCommutePlannerScreen(
+                            worker = worker,
+                            aiTextResponse = aiTextResponse,
+                            waypointsList = aiWaypoints,
+                            onResponseParsed = { text, waypoints ->
+                                aiTextResponse = text
+                                aiWaypoints.clear()
+                                aiWaypoints.addAll(waypoints)
+                            }
+                        )
+                    }
                 }
 
                 // SCREEN 2: Waze-Style Live driver panel with speedometer & crowd reporting sheet
@@ -1093,6 +1230,89 @@ fun MainAppNavigationShell(
                         currentLocation = currentLocation,
                         currentManeuver = currentManeuver,
                         onReportIncident = onReportIncident
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 2. UI Feature Gate (The Lockout Screen): Blocks input elements and requests 1.45 GB assets.
+ */
+@Composable
+fun AiGateLockoutScreen(
+    isDownloading: Boolean,
+    downloadProgress: Float,
+    downloadStatusText: String,
+    onDownloadClicked: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161622)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "🔓 Unlock Offline Transit AI Assistant",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "To proceed, you must download a one-time 1.45 GB regional transit database file.",
+                fontSize = 13.sp,
+                color = Color.LightGray,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            if (isDownloading) {
+                // Circular percentage tracking indicator
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(72.dp)) {
+                    CircularProgressIndicator(
+                        progress = { downloadProgress },
+                        color = Color(0xFF7C3AED),
+                        strokeWidth = 4.dp,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Text(
+                        text = "\\\${(downloadProgress * 100).toInt()}%",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = downloadStatusText.ifEmpty { "Downloading Offline Brain... 0.00 GB / 1.45 GB (0%)" },
+                    fontSize = 11.sp,
+                    color = Color(0xFFFFB300),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            } else {
+                Button(
+                    onClick = onDownloadClicked,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Download AI Files (1.45 GB)",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
@@ -1420,8 +1640,8 @@ fun DirectionGuideScreen(
     setTimeout(() => {
       setSimulationState('loading_model');
       setSimulationLogs(prev => [...prev, 
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-cpu.bin from assets/`,
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-cpu.bin`
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-gpu-int4.bin from assets/`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-gpu-int4.bin`
       ]);
     }, 850);
 
@@ -1660,7 +1880,7 @@ fun DirectionGuideScreen(
                 <BrainCircuit className="w-5 h-5 text-purple-400 animate-pulse" /> Gemma On-Device Emulator
               </h4>
               <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-1">
-                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-cpu.bin` from android assets directory.
+                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-gpu-int4.bin` from android assets directory.
               </p>
             </div>
 
@@ -1870,7 +2090,7 @@ fun DirectionGuideScreen(
             <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0 flex items-center gap-2.5 text-slate-400 text-[9px] font-medium leading-relaxed">
               <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
               <span>
-                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-cpu.bin` is placed in assets/ for automatic worker caching.
+                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-gpu-int4.bin` is placed in assets/ for automatic worker caching.
               </span>
             </div>
           </div>
