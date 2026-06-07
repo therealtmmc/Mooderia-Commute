@@ -915,7 +915,7 @@ export default function MobileShell() {
   };
 
   return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full min-h-screen bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
+    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full h-[100dvh] overflow-hidden min-[851px]:h-auto min-[851px]:min-h-screen min-[851px]:overflow-visible bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
       {isDesktop ? (
         <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-10 select-text">
           <motion.div 
