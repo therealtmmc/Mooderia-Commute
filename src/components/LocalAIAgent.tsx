@@ -41,6 +41,11 @@ export default function LocalAIAgent() {
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
 
   // Gemma On-Device Simulated States 
+  const [isModelReady, setIsModelReady] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadStatusText, setDownloadStatusText] = useState("");
+
   const [simulationState, setSimulationState] = useState<'idle' | 'initializing' | 'loading_model' | 'inferring' | 'parsing' | 'success'>('idle');
   const [simulationLogs, setSimulationLogs] = useState<string[]>([]);
   const [simulatedWaypointResult, setSimulatedWaypointResult] = useState<any[]>([]);
@@ -869,12 +874,12 @@ data class Waypoint(val name: String, val lat: Double, val lng: Double)
 class MediaPipeLlmWorker(private val context: Context) {
 
     private var llmInference: LlmInference? = null
-    val modelFileName = "gemma-2b-it-gpu-int4.bin"
+    val modelFileName = "gemma-2b-it-cpu-int4.bin"
 
     /**
      * Checks if the 1.45 GB gemma regional transit database file exists locally.
      */
-    fun isModelDownloaded(): Boolean {
+    fun isModelReady(): Boolean {
         val modelFile = java.io.File(context.filesDir, modelFileName)
         return modelFile.exists() && modelFile.length() > 100 * 1024 * 1024
     }
@@ -1045,8 +1050,8 @@ fun MainAppNavigationShell(
     var aiTextResponse by remember { mutableStateOf("") }
     val aiWaypoints = remember { mutableStateListOf<Waypoint>() }
 
-    // 1. Local File Existence Checker state
-    var isAiModelDownloaded by remember { mutableStateOf(worker.isModelDownloaded()) }
+    // 1. Initialization State: checks if file exists locally
+    var isModelReady by remember { mutableStateOf(worker.isModelReady()) }
     var downloadId by remember { mutableLongStateOf(-1L) }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
     var downloadStatusText by remember { mutableStateOf("") }
@@ -1054,7 +1059,7 @@ fun MainAppNavigationShell(
 
     // Check on init
     LaunchedEffect(Unit) {
-        isAiModelDownloaded = worker.isModelDownloaded()
+        isModelReady = worker.isModelReady()
     }
 
     // 5. Dynamic Access Unlock: BroadcastReceiver for ACTION_DOWNLOAD_COMPLETE
@@ -1071,7 +1076,7 @@ fun MainAppNavigationShell(
                         if (statusIdx != -1) {
                             val status = cursor.getInt(statusIdx)
                             if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                                isAiModelDownloaded = true
+                                isModelReady = true
                                 isDownloading = false
                                 downloadProgress = 1.0f
                             }
@@ -1107,7 +1112,7 @@ fun MainAppNavigationShell(
                         val status = cursor.getInt(statusIndex)
 
                         if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                            isAiModelDownloaded = true
+                            isModelReady = true
                             isDownloading = false
                             downloadProgress = 1.0f
                         } else if (status == DownloadManager.STATUS_FAILED) {
@@ -1180,7 +1185,7 @@ fun MainAppNavigationShell(
             when (selectedTab) {
                 // SCREEN 1: AI Transportation Assistant with Lockout Gate
                 0 -> {
-                    if (!isAiModelDownloaded) {
+                    if (!isModelReady) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -1263,15 +1268,15 @@ fun AiGateLockoutScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "🔓 Unlock Offline Transit AI Assistant",
-                fontSize = 18.sp,
+                text = "🔒 MR. SARAO is currently locked. Additional files required (~1.45 GB).",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "To proceed, you must download a one-time 1.45 GB regional transit database file.",
+                text = "To proceed, you must download a one-time 1.45 GB regional transit database file to establish local offline autonomy.",
                 fontSize = 13.sp,
                 color = Color.LightGray,
                 textAlign = TextAlign.Center,
@@ -1310,7 +1315,7 @@ fun AiGateLockoutScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Download AI Files (1.45 GB)",
+                        text = "Download MR. SARAO Transit Brain (1.45 GB)",
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -1630,6 +1635,46 @@ fun DirectionGuideScreen(
     }, 2000);
   };
 
+  const startSimulatedDownload = () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setDownloadProgress(0.05);
+    setDownloadStatusText("Initializing secure data tunnel...");
+    setSimulationLogs(["[SYSTEM] Initiating native DownloadManager request..."]);
+
+    const steps = [
+      { progress: 0.15, text: "Connecting to Hugging Face raw file server..." },
+      { progress: 0.35, text: "Downloading Offline Brain... 0.51 GB / 1.45 GB (35%)" },
+      { progress: 0.65, text: "Downloading Offline Brain... 0.94 GB / 1.45 GB (65%)" },
+      { progress: 0.85, text: "Downloading Offline Brain... 1.23 GB / 1.45 GB (85%)" },
+      { progress: 1.0, text: "Downloading Offline Brain... 1.45 GB / 1.45 GB (100%)" }
+    ];
+
+    steps.forEach((step, index) => {
+      setTimeout(() => {
+        setDownloadProgress(step.progress);
+        setDownloadStatusText(step.text);
+        setSimulationLogs(prev => [
+          ...prev,
+          `[DownloadManager] ${step.text}`
+        ]);
+
+        if (index === steps.length - 1) {
+          setTimeout(() => {
+            setIsDownloading(false);
+            setIsModelReady(true);
+            setSimulationLogs(prev => [
+              ...prev,
+              `[BroadcastReceiver] Received ACTION_DOWNLOAD_COMPLETE notification! ID: 412495`,
+              `[SYSTEM] File "gemma-2b-it-cpu-int4.bin" successfully written to context.filesDir!`,
+              `[SYSTEM] MR. SARAO regional transit database is now unlocked and fully ready. Click RUN to execute.`
+            ]);
+          }, 800);
+        }
+      }, (index + 1) * 800);
+    });
+  };
+
   const runGemmaSimulation = () => {
     if (simulationState !== 'idle' && simulationState !== 'success') return;
     
@@ -1640,8 +1685,8 @@ fun DirectionGuideScreen(
     setTimeout(() => {
       setSimulationState('loading_model');
       setSimulationLogs(prev => [...prev, 
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-gpu-int4.bin from assets/`,
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-gpu-int4.bin`
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-cpu-int4.bin from assets/`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-cpu-int4.bin`
       ]);
     }, 850);
 
@@ -1880,40 +1925,75 @@ fun DirectionGuideScreen(
                 <BrainCircuit className="w-5 h-5 text-purple-400 animate-pulse" /> Gemma On-Device Emulator
               </h4>
               <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-1">
-                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-gpu-int4.bin` from android assets directory.
+                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-cpu-int4.bin` from android assets directory.
               </p>
             </div>
 
             {/* Simulated Live User Prompt Field */}
             <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800/80 space-y-3">
-              <div>
-                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block mb-1">Injected Prompt Constraints</span>
-                <div className="bg-slate-900 text-[10px] text-slate-300 font-mono px-3 py-2 rounded-xl border border-slate-800 font-black">
-                  "Commute from Monumento to Makati using localized systems"
+              {!isModelReady ? (
+                <div className="space-y-3 text-center py-1">
+                  <div className="p-3 bg-red-950/20 border border-red-900/50 rounded-xl text-red-200 text-[10px] font-black uppercase tracking-wide">
+                    🔒 MR. SARAO is currently locked. Additional files required (~1.45 GB).
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
+                    To run offline Philippine commute route extraction, you must download the one-time regional database files straight onto local storage.
+                  </p>
+                  
+                  {isDownloading ? (
+                    <div className="space-y-2 py-1">
+                      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-purple-500 transition-all duration-300"
+                          style={{ width: `${downloadProgress * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-[9px] text-amber-400 font-bold font-mono">
+                        {downloadStatusText || "Connecting to secure database..."}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startSimulatedDownload}
+                      className="w-full bg-purple-600 border-b-4 border-purple-900 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-wider py-2.5 px-4 rounded-xl transition cursor-pointer"
+                    >
+                      Download MR. SARAO Transit Brain (1.45 GB)
+                    </button>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block mb-1">Injected Prompt Constraints</span>
+                    <div className="bg-slate-900 text-[10px] text-slate-300 font-mono px-3 py-2 rounded-xl border border-slate-800 font-black">
+                      "Commute from Monumento to Makati using localized systems"
+                    </div>
+                  </div>
 
-              {/* Action Trigger Button */}
-              <button
-                type="button"
-                onClick={runGemmaSimulation}
-                disabled={simulationState !== 'idle' && simulationState !== 'success'}
-                className={`w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition select-none ${
-                  simulationState === 'idle' || simulationState === 'success'
-                    ? 'bg-gradient-to-r from-purple-600 to-[#46178f] border-b-4 border-purple-900 text-white hover:opacity-95'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
-                }`}
-              >
-                {simulationState === 'idle' || simulationState === 'success' ? (
-                  <>
-                    <Play className="w-4 h-4 fill-white" /> Run Philippine Commute AI Route Extract
-                  </>
-                ) : (
-                  <span className="flex items-center gap-1.5 font-bold font-mono">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" /> State: {simulationState.toUpperCase()}
-                  </span>
-                )}
-              </button>
+                  {/* Action Trigger Button */}
+                  <button
+                    type="button"
+                    onClick={runGemmaSimulation}
+                    disabled={simulationState !== 'idle' && simulationState !== 'success'}
+                    className={`w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition select-none ${
+                      simulationState === 'idle' || simulationState === 'success'
+                        ? 'bg-gradient-to-r from-purple-600 to-[#46178f] border-b-4 border-purple-900 text-white hover:opacity-95'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
+                    }`}
+                  >
+                    {simulationState === 'idle' || simulationState === 'success' ? (
+                      <>
+                        <Play className="w-4 h-4 fill-white" /> Run Philippine Commute AI Route Extract
+                      </>
+                    ) : (
+                      <span className="flex items-center gap-1.5 font-bold font-mono">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" /> State: {simulationState.toUpperCase()}
+                      </span>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Hardware progress states & loaders */}
@@ -2090,7 +2170,7 @@ fun DirectionGuideScreen(
             <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0 flex items-center gap-2.5 text-slate-400 text-[9px] font-medium leading-relaxed">
               <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
               <span>
-                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-gpu-int4.bin` is placed in assets/ for automatic worker caching.
+                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-cpu-int4.bin` is placed in assets/ for automatic worker caching.
               </span>
             </div>
           </div>
