@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, User, Send, BrainCircuit, Lightbulb, Sparkles, Database, ArrowRight, CornerDownRight, History, Shield, Cpu } from 'lucide-react';
+import { Bot, User, Send, BrainCircuit, Lightbulb, Sparkles, Database, ArrowRight, CornerDownRight, History, Shield, Cpu, Code2, Terminal, RefreshCw, FileText, CheckCircle2, Play, AlertCircle, Copy, Check, Star, Settings, FileCode } from 'lucide-react';
 import { db } from '../lib/db';
 import { TRANSIT_LINES, ALL_UNIQUE_STOPS } from '../data/transitDatabase';
 import { findRoute, getHaversineDistanceKm, computeFare, findDirectLeg } from '../utils/fareCalculator';
@@ -36,6 +36,15 @@ const PRESET_CHIP_COLORS = [
 ];
 
 export default function LocalAIAgent() {
+  const [activeTab, setActiveTab] = useState<'chat' | 'android_ide'>('chat');
+  const [activeCodeFile, setActiveCodeFile] = useState<'gradle' | 'worker' | 'screen'>('worker');
+  const [copiedFile, setCopiedFile] = useState<string | null>(null);
+
+  // Gemma On-Device Simulated States 
+  const [simulationState, setSimulationState] = useState<'idle' | 'initializing' | 'loading_model' | 'inferring' | 'parsing' | 'success'>('idle');
+  const [simulationLogs, setSimulationLogs] = useState<string[]>([]);
+  const [simulatedWaypointResult, setSimulatedWaypointResult] = useState<any[]>([]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -786,6 +795,708 @@ export default function LocalAIAgent() {
     }, 450);
   };
 
+  // Code blocks for Android integration 
+  const buildGradleKotlin = `// build.gradle.kts (App Level Settings with Location Permissions and Compose Setup)
+//
+// ⚠️ THE FOLLOWING REQUIRED PERMISSIONS MUST BE REGISTERED IN AndroidManifest.xml:
+// <!-- Access location from GPS antennas -->
+// <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+// <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+// <!-- Download live road directions and instructions -->
+// <uses-permission android:name="android.permission.INTERNET" />
+// <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "com.mooderia.commute"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.mooderia.commute"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+    // 1. Google MediaPipe Tasks GenAI On-Device inference engine library
+    implementation("com.google.mediapipe:tasks-genai:0.10.14")
+    
+    // Kotlin Coroutines for safe high-performance asynchronous threads
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+    
+    // Jetpack Compose Foundation & UI Kits
+    implementation("androidx.compose.ui:ui:1.7.0")
+    implementation("androidx.compose.material3:material3:1.3.0")
+    implementation("androidx.compose.runtime:runtime:1.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+
+    // Google Play Services Location for fine/coarse GPS provider clients
+    implementation("com.google.android.gms:play-services-location:22.0.0")
+}`;
+
+  const workerKotlin = `package com.mooderia.commute.data.ai
+
+import android.content.Context
+import android.util.Log
+import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.google.mediapipe.tasks.genai.llminference.LlmInference.LlmInferenceOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import java.io.File
+import java.io.FileOutputStream
+
+data class Waypoint(val name: String, val lat: Double, val lng: Double)
+
+/**
+ * Background worker handling on-device MediaPipe Gemma inference.
+ * Compiles a localized systemic instruction prompt forcing exact Taglish commute steps 
+ * and programmatically extracts coordinates using a sharp splitter delimiter.
+ */
+class MediaPipeLlmWorker(private val context: Context) {
+
+    private var llmInference: LlmInference? = null
+    private val modelFileName = "gemma-2b-it-cpu.bin"
+
+    /**
+     * Copy the big model gemma binary from assets/ folder to internal storage.
+     */
+    suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val modelFile = File(context.filesDir, modelFileName)
+            if (!modelFile.exists()) {
+                context.assets.open(modelFileName).use { inputStream ->
+                    FileOutputStream(modelFile).use { outputStream ->
+                        val buffer = ByteArray(4096)
+                        var bytesRead: Int
+                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            outputStream.write(buffer, 0, bytesRead)
+                        }
+                    }
+                }
+            }
+
+            val options = LlmInferenceOptions.builder()
+                .setModelFilePath(modelFile.absolutePath)
+                .setMaxTokens(1024)
+                .setTemperature(0.2f)
+                .build()
+
+            llmInference = LlmInference.createFromOptions(context, options)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * Requests on-device Gemma inference loaded with Philippine Systemic Prompts.
+     */
+    suspend fun generateWaypointsJson(userQuery: String): String = withContext(Dispatchers.Default) {
+        val inferenceEngine = llmInference ?: throw IllegalStateException("Inference core uninitialized.")
+        
+        val systemPrompt = """
+            You are a highly knowledgeable Philippine Transit & Commuting AI Assistant built into a mobile navigation app. 
+            Your job is to help users find the best way to travel between locations in the Philippines using public transportation.
+
+            When a user asks for directions or a commute guide, you MUST respond in exactly two parts within a single output, separated by a unique delimiter line "---JSON_DATA---".
+
+            PART 1: NATURAL LANGUAGE GUIDE
+            Provide a clear, concise, step-by-step written guide in conversational English or Taglish. Mention specific landmarks, terminal locations, and routes.
+
+            PART 2: STRUCTURED MAP COORDINATES
+            Immediately following the delimiter "---JSON_DATA---", you must output a valid, raw JSON array of geographic coordinates representing main stops. Each object must contain 'name', 'lat' (latitude as double), and 'lng' (longitude as double).
+
+            Example Format:
+            Take the MRT-3 from North Avenue Station to Ayala Station. From Ayala, walk to BGC Terminal.
+            ---JSON_DATA---
+            [
+              {"name": "North Avenue MRT Station", "lat": 14.6531, "lng": 121.0307},
+              {"name": "Ayala MRT Station", "lat": 14.5494, "lng": 121.0280}
+            ]
+
+            Strict Rules:
+            - Only use realistic, verified latitudes (around 4.0 to 21.0) and longitudes (around 116.0 to 127.0) for the Philippines.
+            - Never output empty JSON. Always provide at least a starting point and an ending point.
+
+            User Query to find paths for: "$userQuery"
+        """.trimIndent()
+
+        inferenceEngine.generateResponse(systemPrompt)
+    }
+}
+
+/**
+ * 100% Free on-device parser to split instruction string parameters 
+ * and convert geographic coordinates into active Map markers.
+ */
+object ResponseParser {
+    fun handleAIResponse(
+        rawAiOutput: String,
+        onTextReady: (String) -> Unit,
+        onCoordinatesReady: (List<Waypoint>) -> Unit
+    ) {
+        val delimiter = "---JSON_DATA---"
+        
+        if (rawAiOutput.contains(delimiter)) {
+            val parts = rawAiOutput.split(delimiter)
+            val textGuide = parts[0].trim()
+            val jsonString = parts[1].trim()
+            
+            // 1. Send clean directions text onto Jetpack Box UI
+            onTextReady(textGuide)
+            
+            // 2. Parse geographical coordinate array programmatically
+            try {
+                val jsonArray = JSONArray(jsonString)
+                val waypointList = mutableListOf<Waypoint>()
+                
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val name = obj.getString("name")
+                    val lat = if (obj.has("lat")) obj.getDouble("lat") else obj.getDouble("latitude")
+                    val lng = if (obj.has("lng")) obj.getDouble("lng") else obj.getDouble("longitude")
+                    
+                    waypointList.add(Waypoint(name, lat, lng))
+                }
+                // 3. Inject stops straight into the map list array
+                onCoordinatesReady(waypointList)
+            } catch (e: Exception) {
+                Log.e("AI_PARSE_ERROR", "Failed to parse coordinate JSON", e)
+            }
+        } else {
+            // Fallback if the delimiter was missing
+            onTextReady(rawAiOutput)
+        }
+    }
+}`;
+
+  const screenKotlin = `package com.mooderia.commute.ui.screens
+
+import android.location.Location
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mooderia.commute.data.ai.Waypoint
+import com.mooderia.commute.data.ai.ResponseParser
+import com.mooderia.commute.data.ai.MediaPipeLlmWorker
+import kotlinx.coroutines.launch
+
+/**
+ * Dynamic Jetpack Compose Main Application Shell with high-fidelity bottom/top navigation bar,
+ * switching between Screen 1 (AI Route Planning) and Screen 2 (Waze Navigation Driver dashboard).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainAppNavigationShell(
+    worker: MediaPipeLlmWorker,
+    currentLocation: Location?,
+    currentManeuver: String,
+    onReportIncident: (String) -> Unit
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("AI Commute Guide", "Waze Direction Guide")
+
+    var aiTextResponse by remember { mutableStateOf("") }
+    val aiWaypoints = remember { mutableStateListOf<Waypoint>() }
+
+    Scaffold(
+        topBar = {
+            Column {
+                CenterAlignedTopAppBar(
+                    title = { 
+                        Text(
+                            text = "PH Travel Route Planner", 
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = Color.White
+                        ) 
+                    },
+                    colors = CenterAlignedTopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color(0xFF1E1E2C)
+                    )
+                )
+                // 100% Free Compose navigation header matching Waze/Map visual vibes
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color(0xFF111116)
+                ) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { 
+                                Text(
+                                    text = title, 
+                                    fontWeight = FontWeight.SemiBold, 
+                                    fontSize = 11.sp,
+                                    color = if (selectedTab == index) Color(0xFF7C3AED) else Color.LightGray
+                                ) 
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when (selectedTab) {
+                // SCREEN 1: AI Transportation Assistant & Autopilot route injectors
+                0 -> {
+                    AiCommutePlannerScreen(
+                        worker = worker,
+                        aiTextResponse = aiTextResponse,
+                        waypointsList = aiWaypoints,
+                        onResponseParsed = { text, waypoints ->
+                            aiTextResponse = text
+                            aiWaypoints.clear()
+                            aiWaypoints.addAll(waypoints)
+                        }
+                    )
+                }
+
+                // SCREEN 2: Waze-Style Live driver panel with speedometer & crowd reporting sheet
+                1 -> {
+                    DirectionGuideScreen(
+                        currentLocation = currentLocation,
+                        currentManeuver = currentManeuver,
+                        onReportIncident = onReportIncident
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AiCommutePlannerScreen(
+    worker: MediaPipeLlmWorker,
+    aiTextResponse: String,
+    waypointsList: List<Waypoint>,
+    onResponseParsed: (String, List<Waypoint>) -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    var textFieldInput by remember { mutableStateOf("") }
+    var isComputing by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .background(Color(0xFF0F0F14))
+    ) {
+        OutlinedTextField(
+            value = textFieldInput,
+            onValueChange = { textFieldInput = it },
+            label = { Text("How do I commute from A to B?", color = Color.White) },
+            placeholder = { Text("e.g., Commute from Monumento to Makati", color = Color.Gray) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(0xFF7C3AED),
+                unfocusedBorderColor = Color.DarkGray
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        Spacer(modifier = Modifier.height(10.dp))
+        
+        Button(
+            onClick = {
+                if (textFieldInput.isBlank()) return@Button
+                coroutineScope.launch {
+                    isComputing = true
+                    try {
+                        worker.initialize()
+                        val rawOutput = worker.generateWaypointsJson(textFieldInput)
+                        
+                        ResponseParser.handleAIResponse(
+                            rawAiOutput = rawOutput,
+                            onTextReady = { textStep ->
+                                onResponseParsed(textStep, emptyList())
+                            },
+                            onCoordinatesReady = { coordinatesList ->
+                                onResponseParsed(aiTextResponse, coordinatesList)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        onResponseParsed("Failed on-device inference: \${e.message}", emptyList())
+                    } finally {
+                        isComputing = false
+                    }
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (isComputing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Inference Calculating programmatically...")
+            } else {
+                Text("Ask Offline AI Assistant")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "AI Transit Steps:",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFF161622), shape = RoundedCornerShape(12.dp))
+                .padding(12.dp)
+        ) {
+            LazyColumn {
+                item {
+                    Text(
+                        text = aiTextResponse.ifEmpty { "Enter your travel query above to generate step-by-step Philippine transit coordinates dynamically." },
+                        color = Color.LightGray,
+                        lineHeight = 20.sp,
+                        fontSize = 13.sp
+                    )
+                }
+                
+                if (waypointsList.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "Auto-Created Waypoints Sequence:", 
+                            fontWeight = FontWeight.Bold, 
+                            color = Color(0xFFFFB300),
+                            fontSize = 12.sp
+                        )
+                    }
+                    items(waypointsList) { waypoint ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E2F))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(waypoint.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("(\${waypoint.lat.toString().take(7)}, \${waypoint.lng.toString().take(7)})", color = Color.Gray, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DirectionGuideScreen(
+    currentLocation: Location?,
+    currentManeuver: String,
+    onReportIncident: (String) -> Unit
+) {
+    // 100% Free speed convertor utilising standard Android speed values
+    val currentSpeedKmH = remember(currentLocation) {
+        currentLocation?.let {
+            if (it.hasSpeed()) (it.speed * 3.6).toInt() else 0
+        } ?: 0
+    }
+    
+    var showReportBottomSheet by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        
+        // 1. Fullscreen maps container running on-device maps vector
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF1D1D26)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "🗺️ Vector Map Active\nTracking GPS: Lat \${currentLocation?.latitude ?: \"14.6575\"} / Lng \${currentLocation?.longitude ?: \"120.9842\"}\nQuerying free OSRM routing geometry...",
+                textAlign = TextAlign.Center,
+                color = Color.LightGray,
+                fontSize = 12.sp,
+                lineHeight = 18.sp
+            )
+        }
+
+        // 2. Head-up Turn-By-Turn Direction display panel
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .align(Alignment.TopCenter),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E88E5)) // Waze-inspired accent blue
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "🚙", fontSize = 28.sp, modifier = Modifier.padding(end = 12.dp))
+                Text(
+                    text = currentManeuver.ifEmpty { "Drive safely. Finding optimal route via public OSRM..." },
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 20.sp
+                )
+            }
+        }
+
+        // 3. Spedometer widget and Incident Alerts Floating buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .align(Alignment.BottomCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            // High-contrast interactive Circular Digital Speedometer
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = CircleShape,
+                color = if (currentSpeedKmH > 60) Color(0xFFE53935) else Color(0xFF333333), // Flashes Red if overspeeding
+                shadowElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "$currentSpeedKmH",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "km/h",
+                        color = Color.LightGray,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            // High-contrast floating incident trigger action button
+            FloatingActionButton(
+                onClick = { showReportBottomSheet = true },
+                containerColor = Color(0xFFFFB300), // Alert warning orange
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Report Road Incident",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        // 4. Modal Bottom Sheet for Crowdsourced Philippine Incidents Pin drops
+        if (showReportBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showReportBottomSheet = false },
+                containerColor = Color(0xFF1A1A24)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Report Road Alert (Philippines)",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    val reports = listOf(
+                        "Heavy Traffic" to "🚗",
+                        "Baha / Flood" to "🌧️",
+                        "Road Construction" to "🚧",
+                        "Accident" to "💥"
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        reports.forEach { (label, emoji) ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        onReportIncident(label)
+                                        showReportBottomSheet = false
+                                    },
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(60.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C3C))
+                                ) {
+                                    Text(text = emoji, fontSize = 22.sp)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = label, 
+                                    fontSize = 11.sp, 
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.LightGray
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
+    }
+}`;
+
+  const handleCopyCode = (key: string, txt: string) => {
+    navigator.clipboard.writeText(txt);
+    setCopiedFile(key);
+    setTimeout(() => {
+      setCopiedFile(null);
+    }, 2000);
+  };
+
+  const runGemmaSimulation = () => {
+    if (simulationState !== 'idle' && simulationState !== 'success') return;
+    
+    setSimulationState('initializing');
+    setSimulationLogs(["[03:35:01] [System Context] Launching background MediaPipe LlmInference task worker on thread pool..."]);
+    
+    // Step 2: Load gemma model
+    setTimeout(() => {
+      setSimulationState('loading_model');
+      setSimulationLogs(prev => [...prev, 
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-cpu.bin from assets/`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-cpu.bin`
+      ]);
+    }, 850);
+
+    // Step 3: Local CPU Inference processing
+    setTimeout(() => {
+      setSimulationState('inferring');
+      setSimulationLogs(prev => [...prev,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Model binary parameters loaded successfully (Size = 1.48 GB)`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [Coroutine-Thread: Dispatchers.Default] Invoking LlmInference.generateResponse() sequentially...`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [System Instructions Template] Injecting Philippine Transit & Commuting AI Assistant guidelines...`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [LlmInference] Stream responses active. Math-bound CPU calculation underway...`
+      ]);
+    }, 2000);
+
+    // Step 4: JSON Output matched with Philippine Coordinate sets
+    setTimeout(() => {
+      setSimulationState('parsing');
+      setSimulationLogs(prev => [...prev,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [LlmInference] Inference complete! Generated 314 tokens asynchronously.`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [ResponseParser] Parsing raw assistant on-device response:`,
+        `-------------------- RAW ASSISTANT OUT --------------------`,
+        `Take the EDSA Carousel Bus directly from Monumento Terminal to Ayala MRT Station. From there, you can walk or ride a local jeepney traversing Makati Avenue towards your final destination in Makati Central Business District. Transit cost is approximately Php 55.`,
+        `---JSON_DATA---`,
+        `[`,
+        `  {"name": "Monumento LRT Station", "lat": 14.6575, "lng": 120.9842},`,
+        `  {"name": "EDSA Carousel Monumento", "lat": 14.6569, "lng": 120.9850},`,
+        `  {"name": "Ayala MRT Station / Bus Terminal", "lat": 14.5494, "lng": 121.0280},`,
+        `  {"name": "Makati Central Business District", "lat": 14.5547, "lng": 121.0244}`,
+        `]`,
+        `-----------------------------------------------------------`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [ResponseParser] Splitting response via delimiter "---JSON_DATA---"...`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [ResponseParser] Extracted text commute guide successfully.`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [ResponseParser] Parsing JSON array with 4 geographic route waypoints...`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [ResponseParser] Success: Auto-extracted Monumento-to-Makati sequence!`
+      ]);
+    }, 3800);
+
+    // Step 5: List injection and SQLite Db insertion
+    setTimeout(() => {
+      const ManilaStops = [
+        "Monumento LRT Station",
+        "EDSA Carousel Monumento",
+        "Ayala MRT Station / Bus Terminal",
+        "Makati Central Business District"
+      ];
+      
+      const newRoute = {
+        name: "[AI Local] Monumento to Makati Transit Sequence",
+        type: "Local AI Tour",
+        fromStop: ManilaStops[0],
+        toStop: ManilaStops[ManilaStops.length - 1],
+        expenseValue: 55.0,
+        notes: "Auto-generated entirely offline using your MediaPipe Tasks GenAI Kotlin background worker with Philippine System prompt guidelines and OSRM integration!",
+        stops: ManilaStops
+      };
+      
+      db.addSavedRoute(newRoute);
+      
+      // Notify active maps dashboard view
+      window.dispatchEvent(new Event('local-db-updated'));
+
+      setSimulatedWaypointResult([
+        { name: "Monumento LRT Station", lat: 14.6575, lng: 120.9842 },
+        { name: "EDSA Carousel Monumento", lat: 14.6569, lng: 120.9850 },
+        { name: "Ayala MRT Station / Bus Terminal", lat: 14.5494, lng: 121.0280 },
+        { name: "Makati Central Business District", lat: 14.5547, lng: 121.0244 }
+      ]);
+      setSimulationState('success');
+      setSimulationLogs(prev => [...prev,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [Room SQLite DB] [Room Dao @Insert] INSERT INTO saved_routes (name, type, stops_json) VALUES ('${newRoute.name}', '${newRoute.type}', '${JSON.stringify(ManilaStops)}')`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [SYSTEM] 4 Philippine travel stops appended directly to active traveler list. Done!`
+      ]);
+    }, 5500);
+  };
+
   return (
     <div id="offline-ai-container" className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 font-sans overflow-hidden select-text">
       
@@ -812,102 +1523,360 @@ export default function LocalAIAgent() {
         </div>
       </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100 dark:bg-slate-900 flex flex-col style-scrollbar">
-        {messages.map((msg) => {
-          const isUser = msg.sender === 'user';
-          // Basic formatter to handle bold and newlines
-          const formatText = (txt: string) => {
-            let processed = txt
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/```(?:sql)?\n([\s\S]*?)```/g, '<pre class="bg-slate-900 border border-slate-700 text-green-400 p-2 rounded truncate mt-2 mb-2 font-mono text-[10px]"><code>$1</code></pre>')
-              .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-              .replace(/\*(.*?)\*/g, '<i>$1</i>')
-              .replace(/\n\n/g, '<br/><br/>')
-              .replace(/\n/g, '<br/>');
-            return { __html: processed };
-          };
-          
-          return (
-            <div
-              id={`ai-chat-bubble-${msg.id}`}
-              key={msg.id}
-              className={`flex flex-col max-w-[85%] ${
-                isUser ? 'self-end items-end' : 'self-start items-start'
-              }`}
+      {/* Dual segment control tab switcher for Speak vs. Android Studio */}
+      <div className="bg-slate-100 dark:bg-slate-900 px-3 py-2 shrink-0 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 justify-between">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+            activeTab === 'chat'
+              ? 'bg-[#46178f] text-white border-purple-900'
+              : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 border-transparent'
+          }`}
+        >
+          <Bot className="w-3.5 h-3.5" /> 💬 Mr. Sarao Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('android_ide')}
+          className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
+            activeTab === 'android_ide'
+              ? 'bg-[#46178f] text-white border-purple-900 shadow-sm'
+              : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 border-transparent'
+          }`}
+        >
+          <Code2 className="w-3.5 h-3.5" /> 🤖 Android MediaPipe IDE
+        </button>
+      </div>
+
+      {activeTab === 'chat' ? (
+        <>
+          {/* Messages area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100 dark:bg-slate-900 flex flex-col style-scrollbar">
+            {messages.map((msg) => {
+              const isUser = msg.sender === 'user';
+              // Basic formatter to handle bold and newlines
+              const formatText = (txt: string) => {
+                let processed = txt
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/```(?:sql)?\n([\s\S]*?)```/g, '<pre class="bg-slate-900 border border-slate-700 text-green-400 p-2 rounded truncate mt-2 mb-2 font-mono text-[10px]"><code>$1</code></pre>')
+                  .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                  .replace(/\*(.*?)\*/g, '<i>$1</i>')
+                  .replace(/\n\n/g, '<br/><br/>')
+                  .replace(/\n/g, '<br/>');
+                return { __html: processed };
+              };
+              
+              return (
+                <div
+                  id={`ai-chat-bubble-${msg.id}`}
+                  key={msg.id}
+                  className={`flex flex-col max-w-[85%] ${
+                    isUser ? 'self-end items-end' : 'self-start items-start'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1 text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest">
+                    {isUser ? (
+                      <>
+                        <span>You</span>
+                        <div className="w-4 h-4 bg-purple-200 dark:bg-purple-900 text-[#46178f] rounded-full flex items-center justify-center text-[8px] font-black uppercase">
+                          U
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Bot className="w-3.5 h-3.5 text-[#9174f4]" />
+                        <span>Mr. Sarao</span>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div
+                    dangerouslySetInnerHTML={formatText(msg.text)}
+                    className={`p-3.5 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm [&_b]:font-black [&_i]:italic ${
+                      isUser
+                        ? 'bg-[#46178f] text-white rounded-tr-none border-b-4 border-purple-900 select-text'
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-2 border-slate-200 dark:border-slate-800 border-b-6 border-b-slate-300 dark:border-b-slate-950 rounded-tl-none select-text'
+                    }`}
+                  />
+                  
+                  <span className="text-[8px] text-gray-400 mt-1 ml-1 mr-1 font-mono">{msg.timestamp}</span>
+                </div>
+              );
+            })}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Presets recommendations */}
+          <div className="bg-white dark:bg-slate-900 p-2 border-t border-slate-250 dark:border-slate-800 flex flex-nowrap gap-1.5 overflow-x-auto shrink-0 snap-x style-scrollbar">
+            {PRESETS.map((preset, idx) => {
+              const style = PRESET_CHIP_COLORS[idx % PRESET_CHIP_COLORS.length];
+              return (
+                <button
+                  id={`chat-preset-button-${idx}`}
+                  key={idx}
+                  onClick={() => handleSend(preset)}
+                  className={`flex items-center gap-1.5 shrink-0 ${style.bg} ${style.text} border ${style.border} text-[10px] px-3.5 py-2.5 rounded-2xl font-black transition cursor-pointer snap-start hover:scale-95 duration-100`}
+                >
+                  <Lightbulb className="w-3.5 h-3.5 shrink-0" />
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Keyboard Input Entry */}
+          <div className="bg-white dark:bg-slate-900 p-3 border-t-2 border-slate-205 dark:border-slate-800 flex items-center gap-2 shrink-0">
+            <input
+              id="chat-user-input"
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSend(inputText);
+              }}
+              placeholder="Ask Mr. Sarao: 'Create route Workspace from Tayuman to Gilmore...'"
+              className="flex-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-950 dark:text-white rounded-2xl px-4 py-3 text-xs font-extrabold focus:outline-none focus:border-[#46178f] placeholder:text-gray-400 dark:placeholder:text-slate-500 select-text relative z-10"
+            />
+            <button
+              id="chat-send-btn"
+              onClick={() => handleSend(inputText)}
+              className="w-11 h-11 bg-[#e21b3c] border-b-6 border-[#a0132a] text-white rounded-2xl flex items-center justify-center hover:bg-[#c21733] active:translate-y-0.5 active:border-b-2 transition cursor-pointer"
             >
-              <div className="flex items-center gap-1.5 mb-1 text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest">
-                {isUser ? (
+              <Send className="w-4 h-4 shrink-0" />
+            </button>
+          </div>
+        </>
+      ) : (
+        /* 100% Offline MediaPipe Android IDE Workspace View Layout */
+        <div className="flex-1 flex flex-col md:flex-row bg-slate-900 border-t border-slate-800 overflow-hidden text-xs">
+          
+          {/* LEFT COLUMN: Interactive Gemma Pipeline Emulation Core Sandbox */}
+          <div className="flex-1 flex flex-col border-r border-slate-800 p-4 overflow-y-auto space-y-4">
+            
+            {/* Emulator Header */}
+            <div>
+              <span className="text-[7.5px] text-purple-400 font-mono uppercase tracking-widest font-black block">MediaPipe Emulator</span>
+              <h4 className="text-white font-black text-sm tracking-tight flex items-center gap-1.5 uppercase">
+                <BrainCircuit className="w-5 h-5 text-purple-400 animate-pulse" /> Gemma On-Device Emulator
+              </h4>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-1">
+                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-cpu.bin` from android assets directory.
+              </p>
+            </div>
+
+            {/* Simulated Live User Prompt Field */}
+            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800/80 space-y-3">
+              <div>
+                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block mb-1">Injected Prompt Constraints</span>
+                <div className="bg-slate-900 text-[10px] text-slate-300 font-mono px-3 py-2 rounded-xl border border-slate-800 font-black">
+                  "Commute from Monumento to Makati using localized systems"
+                </div>
+              </div>
+
+              {/* Action Trigger Button */}
+              <button
+                type="button"
+                onClick={runGemmaSimulation}
+                disabled={simulationState !== 'idle' && simulationState !== 'success'}
+                className={`w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition select-none ${
+                  simulationState === 'idle' || simulationState === 'success'
+                    ? 'bg-gradient-to-r from-purple-600 to-[#46178f] border-b-4 border-purple-900 text-white hover:opacity-95'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
+                }`}
+              >
+                {simulationState === 'idle' || simulationState === 'success' ? (
                   <>
-                    <span>You</span>
-                    <div className="w-4 h-4 bg-purple-200 dark:bg-purple-900 text-[#46178f] rounded-full flex items-center justify-center text-[8px] font-black uppercase">
-                      U
+                    <Play className="w-4 h-4 fill-white" /> Run Philippine Commute AI Route Extract
+                  </>
+                ) : (
+                  <span className="flex items-center gap-1.5 font-bold font-mono">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" /> State: {simulationState.toUpperCase()}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Hardware progress states & loaders */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4.5 space-y-3.5">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-tight font-mono block pb-1 border-b border-slate-800">
+                UI Progress State Feed
+              </span>
+
+              {/* Progress Indicator matching Jetpack Compose state outputs */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 flex items-center justify-center relative">
+                  {simulationState === 'idle' && (
+                    <div className="w-7 h-7 rounded-full border-4 border-slate-800 bg-slate-900 border-dashed"></div>
+                  )}
+                  {(simulationState === 'initializing' || simulationState === 'loading_model') && (
+                    <div className="w-7 h-7 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin"></div>
+                  )}
+                  {simulationState === 'inferring' && (
+                    <div className="w-7 h-7 rounded-full border-4 border-amber-500/30 border-t-amber-500 animate-spin"></div>
+                  )}
+                  {simulationState === 'parsing' && (
+                    <div className="w-7 h-7 rounded-full border-4 border-cyan-500/30 border-t-cyan-500 animate-spin"></div>
+                  )}
+                  {simulationState === 'success' && (
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/50 flex items-center justify-center animate-bounce">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-[9.5px] font-black uppercase text-slate-350 tracking-tight">
+                    {simulationState === 'idle' && "Device Status: Standby Ready"}
+                    {simulationState === 'initializing' && "Status: Spawning Kotlin Coroutine..."}
+                    {simulationState === 'loading_model' && "Status: Transferring Gemma asset..."}
+                    {simulationState === 'inferring' && "Status: Local CPU hardware inferring..."}
+                    {simulationState === 'parsing' && "Status: Extracting Coordinates regex..."}
+                    {simulationState === 'success' && "Status: Success! Injected Map List!"}
+                  </span>
+                  <span className="text-[8.5px] text-slate-500 font-mono mt-0.5">
+                    {simulationState === 'idle' && "Ready to launch LlmInference benchmark."}
+                    {simulationState === 'initializing' && "Binding context resources..."}
+                    {simulationState === 'loading_model' && "1.48 GB binary copying asynchronously..."}
+                    {simulationState === 'inferring' && "High-accuracy Gemma calculating (314 local tokens)..."}
+                    {simulationState === 'parsing' && "Scanning text buffers... matching lats and lngs."}
+                    {simulationState === 'success' && "Saved to Room. Updated interactive travel timeline."}
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Retro Terminal Debug logs */}
+              {simulationLogs.length > 0 && (
+                <div className="bg-slate-900 border border-slate-750 rounded-xl p-3 max-h-[175px] overflow-y-auto style-scrollbar space-y-1.5 font-mono select-text">
+                  {simulationLogs.map((log, lIdx) => (
+                    <div key={lIdx} className="text-[8.5px] text-cyan-400 leading-normal font-black tracking-tight whitespace-pre-wrap">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Extraction outcomes sequence results view */}
+            {simulatedWaypointResult.length > 0 && (
+              <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider font-mono">
+                    Extracted Map Waypoint sequence
+                  </span>
+                  <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-2 py-0.5 rounded border border-emerald-500/20">
+                    Live List Injected ✓
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {simulatedWaypointResult.map((wp, wpIdx) => (
+                    <div key={wpIdx} className="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-850/60 font-mono">
+                      <div className="flex items-center gap-2">
+                        <span className="text-purple-400 font-black text-[9px]">#{wpIdx + 1}</span>
+                        <span className="text-[10px] text-slate-100 font-bold">{wp.name}</span>
+                      </div>
+                      <span className="text-[8.5px] text-slate-500 font-black shrink-0 font-mono">
+                        ({wp.lat}, {wp.lng})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="bg-purple-950/10 border border-purple-900/40 p-3 rounded-2xl flex items-start gap-2 text-left">
+                  <Sparkles className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  <p className="text-[9.5px] text-purple-300 font-medium leading-relaxed">
+                    💡 **Commuter Dashboard Updated!** This "Monumento to Makati transit sequence" itinerary with 4 stops has been parsed and injected directly into your active saved commutes list! Return to the **"Routes" or "Maps" tab** to select and explore this sequence!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN: Code View Sandbox with Copy & Syntax switches */}
+          <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+            
+            {/* Syntax Editor Menu */}
+            <div className="bg-slate-900 border-b border-slate-800 p-2 shrink-0 flex items-center justify-between">
+              
+              {/* Tabs list for Kotlin target files */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setActiveCodeFile('worker')}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
+                    activeCodeFile === 'worker'
+                      ? 'bg-slate-800 text-purple-300 font-bold'
+                      : 'text-slate-500 hover:bg-slate-800'
+                  }`}
+                >
+                  <FileCode className="w-3.5 h-3.5 text-purple-400" /> MediaPipeLlmWorker.kt
+                </button>
+                <button
+                  onClick={() => setActiveCodeFile('screen')}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
+                    activeCodeFile === 'screen'
+                      ? 'bg-slate-800 text-purple-300 font-bold'
+                      : 'text-slate-500 hover:bg-slate-800'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-blue-400" /> LocalAiScreen.kt
+                </button>
+                <button
+                  onClick={() => setActiveCodeFile('gradle')}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
+                    activeCodeFile === 'gradle'
+                      ? 'bg-slate-800 text-purple-300 font-bold'
+                      : 'text-slate-500 hover:bg-slate-500/20'
+                  }`}
+                >
+                  <Settings className="w-3.5 h-3.5 text-amber-400" /> app/build.gradle.kts
+                </button>
+              </div>
+
+              {/* Copy button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const targetTxt = 
+                    activeCodeFile === 'worker' ? workerKotlin :
+                    activeCodeFile === 'screen' ? screenKotlin : buildGradleKotlin;
+                  handleCopyCode(activeCodeFile, targetTxt);
+                }}
+                className="bg-slate-800 hover:bg-slate-700/80 text-slate-200 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition select-none"
+              >
+                {copiedFile === activeCodeFile ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
                   </>
                 ) : (
                   <>
-                    <Bot className="w-3.5 h-3.5 text-[#9174f4]" />
-                    <span>Mr. Sarao</span>
+                    <Copy className="w-3.5 h-3.5" /> Copy Code
                   </>
                 )}
-              </div>
-              
-              <div
-                dangerouslySetInnerHTML={formatText(msg.text)}
-                className={`p-3.5 rounded-2xl text-xs font-semibold leading-relaxed shadow-sm [&_b]:font-black [&_i]:italic ${
-                  isUser
-                    ? 'bg-[#46178f] text-white rounded-tr-none border-b-4 border-purple-900 select-text'
-                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-2 border-slate-200 dark:border-slate-800 border-b-6 border-b-slate-300 dark:border-b-slate-950 rounded-tl-none select-text'
-                }`}
-              />
-              
-              <span className="text-[8px] text-gray-400 mt-1 ml-1 mr-1 font-mono">{msg.timestamp}</span>
+              </button>
             </div>
-          );
-        })}
-        <div ref={chatEndRef} />
-      </div>
 
-      {/* Presets recommendations */}
-      <div className="bg-white dark:bg-slate-900 p-2 border-t border-slate-250 dark:border-slate-800 flex flex-nowrap gap-1.5 overflow-x-auto shrink-0 snap-x style-scrollbar">
-        {PRESETS.map((preset, idx) => {
-          const style = PRESET_CHIP_COLORS[idx % PRESET_CHIP_COLORS.length];
-          return (
-            <button
-              id={`chat-preset-button-${idx}`}
-              key={idx}
-              onClick={() => handleSend(preset)}
-              className={`flex items-center gap-1.5 shrink-0 ${style.bg} ${style.text} border ${style.border} text-[10px] px-3.5 py-2.5 rounded-2xl font-black transition cursor-pointer snap-start hover:scale-95 duration-100`}
-            >
-              <Lightbulb className="w-3.5 h-3.5 shrink-0" />
-              {preset}
-            </button>
-          );
-        })}
-      </div>
+            {/* Text Editor Viewport */}
+            <div className="flex-1 overflow-auto p-4 select-text style-scrollbar">
+              <pre className="bg-transparent text-[#a9b1d6] font-mono text-[9px] leading-relaxed whitespace-pre font-medium text-left">
+                <code>
+                  {activeCodeFile === 'worker' && workerKotlin}
+                  {activeCodeFile === 'screen' && screenKotlin}
+                  {activeCodeFile === 'gradle' && buildGradleKotlin}
+                </code>
+              </pre>
+            </div>
+            
+            {/* Information Footer */}
+            <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0 flex items-center gap-2.5 text-slate-400 text-[9px] font-medium leading-relaxed">
+              <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
+              <span>
+                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-cpu.bin` is placed in assets/ for automatic worker caching.
+              </span>
+            </div>
+          </div>
 
-      {/* Keyboard Input Entry */}
-      <div className="bg-white dark:bg-slate-900 p-3 border-t-2 border-slate-205 dark:border-slate-800 flex items-center gap-2 shrink-0">
-        <input
-          id="chat-user-input"
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSend(inputText);
-          }}
-          placeholder="Ask Mr. Sarao: 'Create route Workspace from Tayuman to Gilmore...'"
-          className="flex-1 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-950 dark:text-white rounded-2xl px-4 py-3 text-xs font-extrabold focus:outline-none focus:border-[#46178f] placeholder:text-gray-400 dark:placeholder:text-slate-500 select-text relative z-10"
-        />
-        <button
-          id="chat-send-btn"
-          onClick={() => handleSend(inputText)}
-          className="w-11 h-11 bg-[#e21b3c] border-b-6 border-[#a0132a] text-white rounded-2xl flex items-center justify-center hover:bg-[#c21733] active:translate-y-0.5 active:border-b-2 transition cursor-pointer"
-        >
-          <Send className="w-4 h-4 shrink-0" />
-        </button>
-      </div>
+        </div>
+      )}
 
     </div>
   );
