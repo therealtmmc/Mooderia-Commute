@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { db, SavedRoute } from '../lib/db';
 import { TRANSIT_LINES, ALL_UNIQUE_STOPS } from '../data/transitDatabase';
 import { findRoute } from '../utils/fareCalculator';
-import { Plus, Trash2, Edit2, MapPin, Bus, Train, Coins, Navigation, Search, Check, X, ArrowRight, Sparkles, Filter, Lock } from 'lucide-react';
+import { Plus, Trash2, Edit2, MapPin, Bus, Train, Coins, Navigation, Search, Check, X, ArrowRight, Sparkles, Filter, Lock, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface RouteManagerProps {
@@ -33,9 +33,41 @@ export default function RouteManager({ onRouteSelected, currentBalance = 0, refr
   const [isCustomStops, setIsCustomStops] = useState(true);
   const [fromStop, setFromStop] = useState('');
   const [toStop, setToStop] = useState('');
+  const [stopsList, setStopsList] = useState<string[]>(['', '']); // Compose mutableStateOf(mutableListOf<String>())
   const [expenseValue, setExpenseValue] = useState<string>('13');
   const [notes, setNotes] = useState('');
   const [routeNumber, setRouteNumber] = useState('');
+
+  // Reordering & mutating operations representing standard Jetpack Compose DragModifiers / list swaps
+  const moveStop = (index: number, direction: 'up' | 'down') => {
+    const newList = [...stopsList];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex >= 0 && targetIndex < newList.length) {
+      const temp = newList[index];
+      newList[index] = newList[targetIndex];
+      newList[targetIndex] = temp;
+      setStopsList(newList);
+    }
+  };
+
+  const handleUpdateStopValue = (index: number, val: string) => {
+    const newList = [...stopsList];
+    newList[index] = val;
+    setStopsList(newList);
+  };
+
+  const handleAddStopField = () => {
+    setStopsList([...stopsList, '']);
+  };
+
+  const handleRemoveStopField = (index: number) => {
+    if (stopsList.length <= 2) {
+      showToast('A route requires at least 2 stops.', 'error');
+      return;
+    }
+    const newList = stopsList.filter((_, i) => i !== index);
+    setStopsList(newList);
+  };
 
   // Predefined stop options depending on transport type
   const [stopsOptions, setStopsOptions] = useState<string[]>([]);
@@ -158,6 +190,13 @@ export default function RouteManager({ onRouteSelected, currentBalance = 0, refr
     setExpenseValue(route.expenseValue.toString());
     setNotes(route.notes || '');
     setRouteNumber(route.routeNumber || '');
+    
+    // Set standard Jetpack Multi-Stop list
+    if (route.stops && route.stops.length >= 2) {
+      setStopsList([...route.stops]);
+    } else {
+      setStopsList([route.fromStop, route.toStop]);
+    }
     setIsFormOpen(true);
   };
 
@@ -166,11 +205,13 @@ export default function RouteManager({ onRouteSelected, currentBalance = 0, refr
     setEditingId(null);
     setTransportType('Jeepney Route');
     const lastRoute = routes.length > 0 ? routes[routes.length - 1] : null;
-    setFromStop(lastRoute ? lastRoute.toStop : '');
+    const start = lastRoute ? lastRoute.toStop : '';
+    setFromStop(start);
     setToStop('');
     setExpenseValue('13');
     setNotes('');
     setRouteNumber('');
+    setStopsList(start ? [start, ''] : ['', '']);
     setIsFormOpen(true);
   };
 
@@ -185,40 +226,45 @@ export default function RouteManager({ onRouteSelected, currentBalance = 0, refr
   // Save/Update action
   const handleSaveRoute = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fromStop.trim() || !toStop.trim()) {
-      showToast('Origin and destination stops are required.', 'error');
-      return;
-    }
-    if (fromStop.trim().toLowerCase() === toStop.trim().toLowerCase()) {
-      showToast('Origin and destination cannot be identical.', 'error');
+
+    // Clean empty stop fields from Jetpack Multi-Stop mutableList State
+    const cleanedStops = stopsList.map(s => s.trim()).filter(Boolean);
+    if (cleanedStops.length < 2) {
+      showToast('At least two valid stop names are required for a multi-stop itinerary.', 'error');
       return;
     }
 
+    const startStop = cleanedStops[0];
+    const endStop = cleanedStops[cleanedStops.length - 1];
     const fareCost = parseFloat(expenseValue) || 13;
-    const generatedRouteName = `${routeNumber.trim() ? `[${routeNumber.trim()}] ` : ''}${fromStop.trim()} to ${toStop.trim()}`;
+    
+    // Build formatted itinerary string e.g. Stop A to Stop D
+    const generatedRouteName = `${routeNumber.trim() ? `[${routeNumber.trim()}] ` : ''}${cleanedStops.join(' ➔ ')}`;
 
     if (editingId) {
       db.updateSavedRoute(editingId, {
         name: generatedRouteName,
         type: transportType,
-        fromStop: fromStop.trim(),
-        toStop: toStop.trim(),
+        fromStop: startStop,
+        toStop: endStop,
         expenseValue: fareCost,
         routeNumber: routeNumber.trim(),
-        notes: notes.trim()
+        notes: notes.trim(),
+        stops: cleanedStops
       });
-      showToast('Commute route updated in secure storage!', 'success');
+      showToast('Commute route updated in Room database!', 'success');
     } else {
       db.addSavedRoute({
         name: generatedRouteName,
         type: transportType,
-        fromStop: fromStop.trim(),
-        toStop: toStop.trim(),
+        fromStop: startStop,
+        toStop: endStop,
         expenseValue: fareCost,
         routeNumber: routeNumber.trim(),
-        notes: notes.trim()
+        notes: notes.trim(),
+        stops: cleanedStops
       });
-      showToast('Congratulations! Custom route persisted to your list.', 'success');
+      showToast('Multi-stop travel itinerary saved fully offline!', 'success');
     }
 
     setIsFormOpen(false);
@@ -424,87 +470,116 @@ export default function RouteManager({ onRouteSelected, currentBalance = 0, refr
               />
             </div>
 
-            {/* Route descriptive name removed - it will auto-populate as "A to B" */}
-
-            {/* Stop selectors */}
+            {/* Route descriptive name is auto-generated */}
             <div className="space-y-2">
-              <label className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                Depart & Alight Stations
+              <label className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider flex justify-between">
+                <span>Sequence of Waypoint Stops ({stopsList.length})</span>
+                <span className="text-[8px] text-[#46178f] dark:text-purple-300 font-extrabold font-mono tracking-wider">Multi-Stop Sequence</span>
               </label>
 
+              {/* Stations DB toggle if options available */}
               {stopsOptions.length > 0 && (
-                <div className="flex gap-2 bg-slate-100/85 dark:bg-slate-800 p-1 rounded-xl text-[8px] font-black uppercase mb-1">
+                <div className="flex gap-2 bg-slate-100/85 dark:bg-slate-800 p-0.5 rounded-xl text-[8px] font-black uppercase mb-1">
                   <button
                     type="button"
                     onClick={() => setIsCustomStops(false)}
-                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                    className={`flex-1 py-1 rounded-md text-center transition cursor-pointer ${
                       !isCustomStops ? 'bg-[#46178f] text-white' : 'text-slate-500'
                     }`}
                   >
-                    Use Station DB
+                    Station Dropdowns
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsCustomStops(true)}
-                    className={`flex-1 py-1.5 rounded-lg text-center transition ${
+                    className={`flex-1 py-1 rounded-md text-center transition cursor-pointer ${
                       isCustomStops ? 'bg-[#46178f] text-white' : 'text-slate-500'
                     }`}
                   >
-                    Custom Inputs
+                    Custom Typing
                   </button>
                 </div>
               )}
 
-              {!isCustomStops && stopsOptions.length > 0 ? (
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-[8px] text-slate-400 uppercase font-black tracking-widest block mb-0.5">Start Station</span>
-                    <select
-                      value={fromStop}
-                      onChange={(e) => setFromStop(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl p-2 focus:outline-none"
-                    >
-                      {stopsOptions.map((opt, i) => (
-                        <option key={i} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
+              <div className="space-y-2 max-h-[190px] overflow-y-auto style-scrollbar pr-1">
+                {stopsList.map((stopVal, index) => {
+                  return (
+                    <div key={index} className="flex items-center gap-1.5 bg-slate-50/55 dark:bg-slate-800/40 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800 relative group">
+                      {/* Drag/Order index representation */}
+                      <span className="text-[10px] font-mono font-black text-[#46178f] dark:text-purple-300 w-5 text-center">
+                        #{index + 1}
+                      </span>
+                      
+                      {/* Input Stop Name */}
+                      <div className="flex-1 min-w-0">
+                        {!isCustomStops && stopsOptions.length > 0 ? (
+                          <select
+                            value={stopVal}
+                            required
+                            onChange={(e) => handleUpdateStopValue(index, e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-[11px] font-bold rounded-xl p-1.5 focus:outline-none"
+                          >
+                            <option value="" disabled hidden>Choose Station...</option>
+                            {stopsOptions.map((opt, oIdx) => (
+                              <option key={oIdx} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            maxLength={48}
+                            required
+                            placeholder={`Stop #${index + 1} name...`}
+                            value={stopVal}
+                            onChange={(e) => handleUpdateStopValue(index, e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-[11px] font-bold rounded-xl px-2.5 py-1 focus:outline-none focus:border-[#46178f]"
+                          />
+                        )}
+                      </div>
 
-                  <div>
-                    <span className="text-[8px] text-slate-400 uppercase font-black tracking-widest block mb-0.5">End Station</span>
-                    <select
-                      value={toStop}
-                      onChange={(e) => setToStop(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl p-2 focus:outline-none"
-                    >
-                      {stopsOptions.filter(x => x !== fromStop).map((opt, i) => (
-                        <option key={i} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    maxLength={48}
-                    required
-                    placeholder="Origin stop..."
-                    value={fromStop}
-                    onChange={(e) => setFromStop(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-[#46178f]"
-                  />
-                  <input
-                    type="text"
-                    maxLength={48}
-                    required
-                    placeholder="Destination stop..."
-                    value={toStop}
-                    onChange={(e) => setToStop(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-[#46178f]"
-                  />
-                </div>
-              )}
+                      {/* Jetpack Compose Layout Action Buttons: Up, Down, Delete */}
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => moveStop(index, 'up')}
+                          disabled={index === 0}
+                          className={`p-1 rounded cursor-pointer transition ${index === 0 ? 'opacity-20' : 'hover:bg-slate-200 dark:hover:bg-slate-700 text-[#46178f] dark:text-purple-300'}`}
+                          title="Move up sequence"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveStop(index, 'down')}
+                          disabled={index === stopsList.length - 1}
+                          className={`p-1 rounded cursor-pointer transition ${index === stopsList.length - 1 ? 'opacity-20' : 'hover:bg-slate-200 dark:hover:bg-slate-700 text-[#46178f] dark:text-purple-300'}`}
+                          title="Move down sequence"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={stopsList.length <= 2}
+                          onClick={() => handleRemoveStopField(index)}
+                          className={`p-1 rounded transition ${stopsList.length <= 2 ? 'opacity-20 cursor-not-allowed' : 'text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer'}`}
+                          title="Remove stop"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add stop button */}
+              <button
+                type="button"
+                onClick={handleAddStopField}
+                className="w-full border-2 border-dashed border-purple-200/80 dark:border-purple-900/40 hover:border-purple-400 text-[#46178f] dark:text-purple-300 text-[10px] font-black uppercase py-2 rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+              >
+                <Plus className="w-3 h-3" /> Add Destination stop
+              </button>
             </div>
 
             {/* Custom PHP Fare */}

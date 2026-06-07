@@ -18,6 +18,7 @@ export interface SavedRoute {
   toCustom?: boolean;
   notes?: string;
   createdAt: number;
+  stops?: string[]; // Multiple waypoint stops for Jetpack Compose Multi-Stop list
 }
 
 export interface UserProfile {
@@ -138,7 +139,8 @@ class InMemorySQLiteDatabase {
     };
     this.savedRoutes.push(newRoute);
     this.saveRoutesToStorage();
-    this.logQuery(`INSERT INTO user_routes (name, type, from_stop, to_stop, expense) VALUES ('${newRoute.name}', '${newRoute.type}', '${newRoute.fromStop}', '${newRoute.toStop}', ${newRoute.expenseValue})`);
+    const stopsJson = JSON.stringify(newRoute.stops || [newRoute.fromStop, newRoute.toStop]);
+    this.logQuery(`[Room Dao @Insert] INSERT INTO saved_routes (id, name, type, from_stop, to_stop, stops_json, expense_value) VALUES ('${newRoute.id}', '${newRoute.name}', '${newRoute.type}', '${newRoute.fromStop}', '${newRoute.toStop}', '${stopsJson}', ${newRoute.expenseValue})`);
     return newRoute;
   }
 
@@ -147,14 +149,15 @@ class InMemorySQLiteDatabase {
     if (idx >= 0) {
       this.savedRoutes[idx] = { ...this.savedRoutes[idx], ...updated };
       this.saveRoutesToStorage();
-      this.logQuery(`UPDATE user_routes SET ${Object.keys(updated).map(k => `${k} = ?`).join(', ')} WHERE id = '${id}'`);
+      const fields = Object.keys(updated).map(k => `${k} = ?`).join(', ');
+      this.logQuery(`[Room Dao @Update] UPDATE saved_routes SET ${fields} WHERE id = '${id}'`);
     }
   }
 
   public deleteSavedRoute(id: string) {
     this.savedRoutes = this.savedRoutes.filter(r => r.id !== id);
     this.saveRoutesToStorage();
-    this.logQuery(`DELETE FROM user_routes WHERE id = '${id}'`);
+    this.logQuery(`[Room Dao @Delete] DELETE FROM saved_routes WHERE id = '${id}'`);
   }
 
   // --- Pure Local DB emulation for the console logging ---

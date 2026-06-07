@@ -284,6 +284,73 @@ export default function MobileShell() {
 
   const isDesktop = viewportWidth > 850;
 
+  // Dynamically control parent scrolling behavior when showing the restricted mobile landing website
+  useEffect(() => {
+    const bodyEl = document.body;
+    const htmlEl = document.documentElement;
+    const rootEl = document.getElementById('root');
+    const appEl = rootEl?.firstElementChild;
+
+    if (isRestrictedMobileBrowser) {
+      bodyEl.style.overflowY = 'auto';
+      bodyEl.style.overflowX = 'hidden';
+      bodyEl.style.height = 'auto';
+      
+      htmlEl.style.overflowY = 'auto';
+      htmlEl.style.overflowX = 'hidden';
+      htmlEl.style.height = 'auto';
+
+      if (rootEl) {
+        rootEl.style.overflowY = 'auto';
+        rootEl.style.overflowX = 'hidden';
+        rootEl.style.height = 'auto';
+      }
+      if (appEl instanceof HTMLElement) {
+        appEl.style.overflowY = 'auto';
+        appEl.style.overflowX = 'hidden';
+        appEl.style.height = 'auto';
+      }
+    } else {
+      bodyEl.style.overflowY = '';
+      bodyEl.style.overflowX = '';
+      bodyEl.style.height = '';
+      
+      htmlEl.style.overflowY = '';
+      htmlEl.style.overflowX = '';
+      htmlEl.style.height = '';
+
+      if (rootEl) {
+        rootEl.style.overflowY = '';
+        rootEl.style.overflowX = '';
+        rootEl.style.height = '';
+      }
+      if (appEl instanceof HTMLElement) {
+        appEl.style.overflowY = '';
+        appEl.style.overflowX = '';
+        appEl.style.height = '';
+      }
+    }
+
+    return () => {
+      bodyEl.style.overflowY = '';
+      bodyEl.style.overflowX = '';
+      bodyEl.style.height = '';
+      htmlEl.style.overflowY = '';
+      htmlEl.style.overflowX = '';
+      htmlEl.style.height = '';
+      if (rootEl) {
+        rootEl.style.overflowY = '';
+        rootEl.style.overflowX = '';
+        rootEl.style.height = '';
+      }
+      if (appEl instanceof HTMLElement) {
+        appEl.style.overflowY = '';
+        appEl.style.overflowX = '';
+        appEl.style.height = '';
+      }
+    };
+  }, [isRestrictedMobileBrowser]);
+
   const renderRestrictedMobileBrowser = () => {
     const containerVariants = {
       hidden: { opacity: 0 },
@@ -308,7 +375,7 @@ export default function MobileShell() {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-6 overflow-y-auto font-sans text-slate-800 dark:text-slate-100 select-text scroll-smooth"
+        className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-start p-6 font-sans text-slate-800 dark:text-slate-100 select-text scroll-smooth"
       >
         <motion.div variants={itemVariants} className="w-full max-w-md flex flex-col items-start text-left mt-6 mb-7 space-y-4">
           
@@ -914,8 +981,12 @@ export default function MobileShell() {
     }
   };
 
+  const wrapperClass = isRestrictedMobileBrowser
+    ? "w-full h-auto min-h-screen overflow-y-auto overflow-x-hidden"
+    : "w-full h-[100dvh] overflow-hidden min-[851px]:h-auto min-[851px]:min-h-screen min-[851px]:overflow-visible";
+
   return (
-    <div id="applet-theme-wrapper" className={`${isDarkClass} w-full h-[100dvh] overflow-hidden min-[851px]:h-auto min-[851px]:min-h-screen min-[851px]:overflow-visible bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
+    <div id="applet-theme-wrapper" className={`${isDarkClass} ${wrapperClass} bg-gradient-to-tr from-violet-50/50 via-stone-50/20 to-purple-50/40 dark:from-slate-950 dark:via-purple-950/10 dark:to-slate-950 scroll-smooth`}>
       {isDesktop ? (
         <div id="desktop-commute-wrapper" className="w-full min-h-screen flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-10 select-text">
           <motion.div 
