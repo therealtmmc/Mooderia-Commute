@@ -36,10 +36,6 @@ const PRESET_CHIP_COLORS = [
 ];
 
 export default function LocalAIAgent() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'android_ide'>('chat');
-  const [activeCodeFile, setActiveCodeFile] = useState<'gradle' | 'worker' | 'screen'>('worker');
-  const [copiedFile, setCopiedFile] = useState<string | null>(null);
-
   // Gemma On-Device Simulated States 
   const [isModelReady, setIsModelReady] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -874,13 +870,13 @@ data class Waypoint(val name: String, val lat: Double, val lng: Double)
 class MediaPipeLlmWorker(private val context: Context) {
 
     private var llmInference: LlmInference? = null
-    val modelFileName = "gemma-2b-it-cpu-int4.bin"
+    val modelFileName = "gemma-2b-it-gpu-int4.bin"
 
     /**
      * Checks if the 1.45 GB gemma regional transit database file exists locally.
      */
     fun isModelReady(): Boolean {
-        val modelFile = java.io.File(context.filesDir, modelFileName)
+        val modelFile = java.io.File(context.getExternalFilesDir(null), modelFileName)
         return modelFile.exists() && modelFile.length() > 100 * 1024 * 1024
     }
 
@@ -889,7 +885,7 @@ class MediaPipeLlmWorker(private val context: Context) {
      */
     suspend fun initialize(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val modelFile = File(context.filesDir, modelFileName)
+            val modelFile = File(context.getExternalFilesDir(null), modelFileName)
             if (!modelFile.exists()) {
                 context.assets.open(modelFileName).use { inputStream ->
                     FileOutputStream(modelFile).use { outputStream ->
@@ -1098,7 +1094,7 @@ fun MainAppNavigationShell(
         if (isDownloading && downloadId != -1L) {
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             while (isDownloading) {
-                delay(1000)
+                delay(500)
                 val query = DownloadManager.Query().setFilterById(downloadId)
                 val cursor = downloadManager.query(query)
                 if (cursor != null && cursor.moveToFirst()) {
@@ -1138,84 +1134,84 @@ fun MainAppNavigationShell(
         }
     }
 
-    Scaffold(
-        topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = { 
-                        Text(
-                            text = "PH Travel Route Planner", 
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            color = Color.White
-                        ) 
-                    },
-                    colors = CenterAlignedTopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = Color(0xFF1E1E2C)
-                    )
-                )
-                // 100% Free Compose navigation header matching Waze/Map visual vibes
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color(0xFF111116)
-                ) {
-                    tabTitles.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { 
-                                Text(
-                                    text = title, 
-                                    fontWeight = FontWeight.SemiBold, 
-                                    fontSize = 11.sp,
-                                    color = if (selectedTab == index) Color(0xFF7C3AED) else Color.LightGray
-                                ) 
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    if (!isModelReady) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .background(Color(0xFF0F0F14)),
+            contentAlignment = Alignment.Center
         ) {
-            when (selectedTab) {
-                // SCREEN 1: AI Transportation Assistant with Lockout Gate
-                0 -> {
-                    if (!isModelReady) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFF0F0F14)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AiGateLockoutScreen(
-                                isDownloading = isDownloading,
-                                downloadProgress = downloadProgress,
-                                downloadStatusText = downloadStatusText,
-                                onDownloadClicked = {
-                                    try {
-                                        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                                        val uri = Uri.parse("https://huggingface.co/Mooderia/ph-transit-brain/resolve/main/gemma-2b-it-gpu-int4.bin?download=true")
-                                        val request = DownloadManager.Request(uri)
-                                            .setTitle("Regional Transit Database File")
-                                            .setDescription("Offline Gemma Neural Brain (1.45 GB)")
-                                            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                            .setDestinationUri(Uri.fromFile(java.io.File(context.filesDir, worker.modelFileName)))
-                                        
-                                        downloadId = downloadManager.enqueue(request)
-                                        isDownloading = true
-                                        downloadStatusText = "Initializing secure data tunnel..."
-                                    } catch (e: Exception) {
-                                        downloadStatusText = "Failed to start download: \\\${e.message}"
-                                    }
+            AiGateLockoutScreen(
+                isDownloading = isDownloading,
+                downloadProgress = downloadProgress,
+                downloadStatusText = downloadStatusText,
+                onDownloadClicked = {
+                    try {
+                        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                        val uri = Uri.parse("https://huggingface.co/Mooderia/ph-transit-brain/resolve/main/gemma-2b-it-gpu-int4.bin?download=true")
+                        val request = DownloadManager.Request(uri)
+                            .setTitle("Regional Transit Database File")
+                            .setDescription("Offline Gemma Neural Brain (1.45 GB)")
+                            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                            .setDestinationUri(Uri.fromFile(java.io.File(context.getExternalFilesDir(null), worker.modelFileName)))
+                        
+                        downloadId = downloadManager.enqueue(request)
+                        isDownloading = true
+                        downloadStatusText = "Initializing secure data tunnel..."
+                    } catch (e: Exception) {
+                        downloadStatusText = "Failed to start download: \\\${e.message}"
+                    }
+                }
+            )
+        }
+    } else {
+        Scaffold(
+            topBar = {
+                Column {
+                    CenterAlignedTopAppBar(
+                        title = { 
+                            Text(
+                                text = "PH Travel Route Planner", 
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                color = Color.White
+                            ) 
+                        },
+                        colors = CenterAlignedTopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = Color(0xFF1E1E2C)
+                        )
+                    )
+                    // 100% Free Compose navigation header matching Waze/Map visual vibes
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = Color(0xFF111116)
+                    ) {
+                        tabTitles.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { 
+                                    Text(
+                                        text = title, 
+                                        fontWeight = FontWeight.SemiBold, 
+                                        fontSize = 11.sp,
+                                        color = if (selectedTab == index) Color(0xFF7C3AED) else Color.LightGray
+                                    ) 
                                 }
                             )
                         }
-                    } else {
+                    }
+                }
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when (selectedTab) {
+                    // SCREEN 1: AI Transportation Assistant with Lockout Gate
+                    0 -> {
                         AiCommutePlannerScreen(
                             worker = worker,
                             aiTextResponse = aiTextResponse,
@@ -1227,15 +1223,15 @@ fun MainAppNavigationShell(
                             }
                         )
                     }
-                }
 
-                // SCREEN 2: Waze-Style Live driver panel with speedometer & crowd reporting sheet
-                1 -> {
-                    DirectionGuideScreen(
-                        currentLocation = currentLocation,
-                        currentManeuver = currentManeuver,
-                        onReportIncident = onReportIncident
-                    )
+                    // SCREEN 2: Waze-Style Live driver panel with speedometer & crowd reporting sheet
+                    1 -> {
+                        DirectionGuideScreen(
+                            currentLocation = currentLocation,
+                            currentManeuver = currentManeuver,
+                            onReportIncident = onReportIncident
+                        )
+                    }
                 }
             }
         }
@@ -1627,14 +1623,6 @@ fun DirectionGuideScreen(
     }
 }`;
 
-  const handleCopyCode = (key: string, txt: string) => {
-    navigator.clipboard.writeText(txt);
-    setCopiedFile(key);
-    setTimeout(() => {
-      setCopiedFile(null);
-    }, 2000);
-  };
-
   const startSimulatedDownload = () => {
     if (isDownloading) return;
     setIsDownloading(true);
@@ -1666,7 +1654,7 @@ fun DirectionGuideScreen(
             setSimulationLogs(prev => [
               ...prev,
               `[BroadcastReceiver] Received ACTION_DOWNLOAD_COMPLETE notification! ID: 412495`,
-              `[SYSTEM] File "gemma-2b-it-cpu-int4.bin" successfully written to context.filesDir!`,
+              `[SYSTEM] File "gemma-2b-it-gpu-int4.bin" successfully written to context.filesDir!`,
               `[SYSTEM] MR. SARAO regional transit database is now unlocked and fully ready. Click RUN to execute.`
             ]);
           }, 800);
@@ -1685,8 +1673,8 @@ fun DirectionGuideScreen(
     setTimeout(() => {
       setSimulationState('loading_model');
       setSimulationLogs(prev => [...prev, 
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-cpu-int4.bin from assets/`,
-        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-cpu-int4.bin`
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] copyAssetToFile: Reading gemma-2b-it-gpu-int4.bin from assets/`,
+        `[${new Date().toLocaleTimeString([], { hour12: false })}] [MediaPipe Tasks GenAI] Asset transferred onto device storage: /data/user/0/com.mooderia.commute/files/gemma-2b-it-gpu-int4.bin`
       ]);
     }, 850);
 
@@ -1768,8 +1756,8 @@ fun DirectionGuideScreen(
       {/* Bot branding header */}
       <div className="bg-[#46178f] p-4 shrink-0 flex items-center justify-between shadow-md border-b-4 border-[#361175]">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-[#9174f4]">
-            <BrainCircuit className="w-6 h-6 text-[#46178f] dark:text-purple-350" />
+          <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center border-2 border-slate-200">
+            <BrainCircuit className="w-6 h-6 text-[#46178f]" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
@@ -1779,7 +1767,7 @@ fun DirectionGuideScreen(
                 <span>On-Device AI</span>
               </div>
             </div>
-            <span className="text-[9px] text-purple-200 block mt-0.5 max-w-max font-bold">
+            <span className="text-[9px] text-purple-200 block mt-0.5 max-w-max font-bold font-sans">
               Autonomous Commuter Transit Brain
             </span>
           </div>
@@ -1788,31 +1776,49 @@ fun DirectionGuideScreen(
         </div>
       </div>
 
-      {/* Dual segment control tab switcher for Speak vs. Android Studio */}
-      <div className="bg-slate-100 dark:bg-slate-900 px-3 py-2 shrink-0 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 justify-between">
-        <button
-          onClick={() => setActiveTab('chat')}
-          className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
-            activeTab === 'chat'
-              ? 'bg-[#46178f] text-white border-purple-900'
-              : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 border-transparent'
-          }`}
-        >
-          <Bot className="w-3.5 h-3.5" /> 💬 Mr. Sarao Chat
-        </button>
-        <button
-          onClick={() => setActiveTab('android_ide')}
-          className={`flex-1 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${
-            activeTab === 'android_ide'
-              ? 'bg-[#46178f] text-white border-purple-900 shadow-sm'
-              : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 border-transparent'
-          }`}
-        >
-          <Code2 className="w-3.5 h-3.5" /> 🤖 Android MediaPipe IDE
-        </button>
-      </div>
+      {!isModelReady ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-55 dark:bg-slate-950 text-center relative z-20 overflow-y-auto">
+          <div className="max-w-md w-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-xl space-y-6">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/30 text-red-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+              <Shield className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                🔒 MR. SARAO is currently locked
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold col-span-2">
+                Additional regional database files required (~1.45 GB) to establish local offline autonomy.
+              </p>
+            </div>
 
-      {activeTab === 'chat' ? (
+            {isDownloading ? (
+              <div className="space-y-3 bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-purple-600 dark:text-purple-400 font-bold">Download Progress</span>
+                  <span className="text-amber-600 font-extrabold">{Math.round(downloadProgress * 100)}%</span>
+                </div>
+                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-600 to-[#46178f] transition-all duration-300"
+                    style={{ width: `${downloadProgress * 100}%` }}
+                  ></div>
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold font-mono animate-pulse">
+                  {downloadStatusText || "Initializing secure data tunnel..."}
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startSimulatedDownload}
+                className="w-full bg-[#46178f] border-b-6 border-[#361175] hover:bg-[#3d147d] text-white font-black uppercase text-xs tracking-wider py-4 px-6 rounded-2xl transition-all cursor-pointer active:translate-y-0.5 active:border-b-2 flex items-center justify-center gap-2 shadow-md hover:brightness-105"
+              >
+                📥 Download MR. SARAO Transit Brain (1.45 GB)
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
         <>
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-100 dark:bg-slate-900 flex flex-col style-scrollbar">
@@ -1911,271 +1917,6 @@ fun DirectionGuideScreen(
             </button>
           </div>
         </>
-      ) : (
-        /* 100% Offline MediaPipe Android IDE Workspace View Layout */
-        <div className="flex-1 flex flex-col md:flex-row bg-slate-900 border-t border-slate-800 overflow-hidden text-xs">
-          
-          {/* LEFT COLUMN: Interactive Gemma Pipeline Emulation Core Sandbox */}
-          <div className="flex-1 flex flex-col border-r border-slate-800 p-4 overflow-y-auto space-y-4">
-            
-            {/* Emulator Header */}
-            <div>
-              <span className="text-[7.5px] text-purple-400 font-mono uppercase tracking-widest font-black block">MediaPipe Emulator</span>
-              <h4 className="text-white font-black text-sm tracking-tight flex items-center gap-1.5 uppercase">
-                <BrainCircuit className="w-5 h-5 text-purple-400 animate-pulse" /> Gemma On-Device Emulator
-              </h4>
-              <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-1">
-                Trigger our fully simulated background Coroutines worker executing offline `LlmInference.generateResponse()` cycles using `gemma-2b-it-cpu-int4.bin` from android assets directory.
-              </p>
-            </div>
-
-            {/* Simulated Live User Prompt Field */}
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800/80 space-y-3">
-              {!isModelReady ? (
-                <div className="space-y-3 text-center py-1">
-                  <div className="p-3 bg-red-950/20 border border-red-900/50 rounded-xl text-red-200 text-[10px] font-black uppercase tracking-wide">
-                    🔒 MR. SARAO is currently locked. Additional files required (~1.45 GB).
-                  </div>
-                  <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                    To run offline Philippine commute route extraction, you must download the one-time regional database files straight onto local storage.
-                  </p>
-                  
-                  {isDownloading ? (
-                    <div className="space-y-2 py-1">
-                      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-purple-500 transition-all duration-300"
-                          style={{ width: `${downloadProgress * 100}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-[9px] text-amber-400 font-bold font-mono">
-                        {downloadStatusText || "Connecting to secure database..."}
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={startSimulatedDownload}
-                      className="w-full bg-purple-600 border-b-4 border-purple-900 hover:bg-purple-700 text-white font-black uppercase text-[10px] tracking-wider py-2.5 px-4 rounded-xl transition cursor-pointer"
-                    >
-                      Download MR. SARAO Transit Brain (1.45 GB)
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest font-mono block mb-1">Injected Prompt Constraints</span>
-                    <div className="bg-slate-900 text-[10px] text-slate-300 font-mono px-3 py-2 rounded-xl border border-slate-800 font-black">
-                      "Commute from Monumento to Makati using localized systems"
-                    </div>
-                  </div>
-
-                  {/* Action Trigger Button */}
-                  <button
-                    type="button"
-                    onClick={runGemmaSimulation}
-                    disabled={simulationState !== 'idle' && simulationState !== 'success'}
-                    className={`w-full py-3 rounded-2xl text-[10.5px] font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition select-none ${
-                      simulationState === 'idle' || simulationState === 'success'
-                        ? 'bg-gradient-to-r from-purple-600 to-[#46178f] border-b-4 border-purple-900 text-white hover:opacity-95'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border-none'
-                    }`}
-                  >
-                    {simulationState === 'idle' || simulationState === 'success' ? (
-                      <>
-                        <Play className="w-4 h-4 fill-white" /> Run Philippine Commute AI Route Extract
-                      </>
-                    ) : (
-                      <span className="flex items-center gap-1.5 font-bold font-mono">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" /> State: {simulationState.toUpperCase()}
-                      </span>
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Hardware progress states & loaders */}
-            <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4.5 space-y-3.5">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-tight font-mono block pb-1 border-b border-slate-800">
-                UI Progress State Feed
-              </span>
-
-              {/* Progress Indicator matching Jetpack Compose state outputs */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 flex items-center justify-center relative">
-                  {simulationState === 'idle' && (
-                    <div className="w-7 h-7 rounded-full border-4 border-slate-800 bg-slate-900 border-dashed"></div>
-                  )}
-                  {(simulationState === 'initializing' || simulationState === 'loading_model') && (
-                    <div className="w-7 h-7 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin"></div>
-                  )}
-                  {simulationState === 'inferring' && (
-                    <div className="w-7 h-7 rounded-full border-4 border-amber-500/30 border-t-amber-500 animate-spin"></div>
-                  )}
-                  {simulationState === 'parsing' && (
-                    <div className="w-7 h-7 rounded-full border-4 border-cyan-500/30 border-t-cyan-500 animate-spin"></div>
-                  )}
-                  {simulationState === 'success' && (
-                    <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/50 flex items-center justify-center animate-bounce">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col text-left">
-                  <span className="text-[9.5px] font-black uppercase text-slate-350 tracking-tight">
-                    {simulationState === 'idle' && "Device Status: Standby Ready"}
-                    {simulationState === 'initializing' && "Status: Spawning Kotlin Coroutine..."}
-                    {simulationState === 'loading_model' && "Status: Transferring Gemma asset..."}
-                    {simulationState === 'inferring' && "Status: Local CPU hardware inferring..."}
-                    {simulationState === 'parsing' && "Status: Extracting Coordinates regex..."}
-                    {simulationState === 'success' && "Status: Success! Injected Map List!"}
-                  </span>
-                  <span className="text-[8.5px] text-slate-500 font-mono mt-0.5">
-                    {simulationState === 'idle' && "Ready to launch LlmInference benchmark."}
-                    {simulationState === 'initializing' && "Binding context resources..."}
-                    {simulationState === 'loading_model' && "1.48 GB binary copying asynchronously..."}
-                    {simulationState === 'inferring' && "High-accuracy Gemma calculating (314 local tokens)..."}
-                    {simulationState === 'parsing' && "Scanning text buffers... matching lats and lngs."}
-                    {simulationState === 'success' && "Saved to Room. Updated interactive travel timeline."}
-                  </span>
-                </div>
-              </div>
-
-              {/* Live Retro Terminal Debug logs */}
-              {simulationLogs.length > 0 && (
-                <div className="bg-slate-900 border border-slate-750 rounded-xl p-3 max-h-[175px] overflow-y-auto style-scrollbar space-y-1.5 font-mono select-text">
-                  {simulationLogs.map((log, lIdx) => (
-                    <div key={lIdx} className="text-[8.5px] text-cyan-400 leading-normal font-black tracking-tight whitespace-pre-wrap">
-                      {log}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Extraction outcomes sequence results view */}
-            {simulatedWaypointResult.length > 0 && (
-              <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-4.5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider font-mono">
-                    Extracted Map Waypoint sequence
-                  </span>
-                  <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-2 py-0.5 rounded border border-emerald-500/20">
-                    Live List Injected ✓
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {simulatedWaypointResult.map((wp, wpIdx) => (
-                    <div key={wpIdx} className="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-850/60 font-mono">
-                      <div className="flex items-center gap-2">
-                        <span className="text-purple-400 font-black text-[9px]">#{wpIdx + 1}</span>
-                        <span className="text-[10px] text-slate-100 font-bold">{wp.name}</span>
-                      </div>
-                      <span className="text-[8.5px] text-slate-500 font-black shrink-0 font-mono">
-                        ({wp.lat}, {wp.lng})
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="bg-purple-950/10 border border-purple-900/40 p-3 rounded-2xl flex items-start gap-2 text-left">
-                  <Sparkles className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                  <p className="text-[9.5px] text-purple-300 font-medium leading-relaxed">
-                    💡 **Commuter Dashboard Updated!** This "Monumento to Makati transit sequence" itinerary with 4 stops has been parsed and injected directly into your active saved commutes list! Return to the **"Routes" or "Maps" tab** to select and explore this sequence!
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT COLUMN: Code View Sandbox with Copy & Syntax switches */}
-          <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-            
-            {/* Syntax Editor Menu */}
-            <div className="bg-slate-900 border-b border-slate-800 p-2 shrink-0 flex items-center justify-between">
-              
-              {/* Tabs list for Kotlin target files */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setActiveCodeFile('worker')}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
-                    activeCodeFile === 'worker'
-                      ? 'bg-slate-800 text-purple-300 font-bold'
-                      : 'text-slate-500 hover:bg-slate-800'
-                  }`}
-                >
-                  <FileCode className="w-3.5 h-3.5 text-purple-400" /> MediaPipeLlmWorker.kt
-                </button>
-                <button
-                  onClick={() => setActiveCodeFile('screen')}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
-                    activeCodeFile === 'screen'
-                      ? 'bg-slate-800 text-purple-300 font-bold'
-                      : 'text-slate-500 hover:bg-slate-800'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5 text-blue-400" /> LocalAiScreen.kt
-                </button>
-                <button
-                  onClick={() => setActiveCodeFile('gradle')}
-                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition ${
-                    activeCodeFile === 'gradle'
-                      ? 'bg-slate-800 text-purple-300 font-bold'
-                      : 'text-slate-500 hover:bg-slate-500/20'
-                  }`}
-                >
-                  <Settings className="w-3.5 h-3.5 text-amber-400" /> app/build.gradle.kts
-                </button>
-              </div>
-
-              {/* Copy button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const targetTxt = 
-                    activeCodeFile === 'worker' ? workerKotlin :
-                    activeCodeFile === 'screen' ? screenKotlin : buildGradleKotlin;
-                  handleCopyCode(activeCodeFile, targetTxt);
-                }}
-                className="bg-slate-800 hover:bg-slate-700/80 text-slate-200 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer transition select-none"
-              >
-                {copiedFile === activeCodeFile ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" /> Copy Code
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Text Editor Viewport */}
-            <div className="flex-1 overflow-auto p-4 select-text style-scrollbar">
-              <pre className="bg-transparent text-[#a9b1d6] font-mono text-[9px] leading-relaxed whitespace-pre font-medium text-left">
-                <code>
-                  {activeCodeFile === 'worker' && workerKotlin}
-                  {activeCodeFile === 'screen' && screenKotlin}
-                  {activeCodeFile === 'gradle' && buildGradleKotlin}
-                </code>
-              </pre>
-            </div>
-            
-            {/* Information Footer */}
-            <div className="bg-slate-900 border-t border-slate-800 p-3 shrink-0 flex items-center gap-2.5 text-slate-400 text-[9px] font-medium leading-relaxed">
-              <AlertCircle className="w-4 h-4 text-purple-400 shrink-0" />
-              <span>
-                These high-fidelity code structures represent optimized Kotlin classes integrating MediaPipe on-device LLM inference pipeline. Ensure `gemma-2b-it-cpu-int4.bin` is placed in assets/ for automatic worker caching.
-              </span>
-            </div>
-          </div>
-
-        </div>
       )}
 
     </div>
